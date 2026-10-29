@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:dark;background:#07130e}body{margin:0}[hidden]{display:none!important}</style>
+<title>Szlak Adepta</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#07130e">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600;700&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: a fixed misty-forest scene sits behind everything. Glass HUD on top. Today = one main-mission card, a day-chest strip and a two-column grid of contract tiles. Floating dock with a raised study button in the middle. Single dark forest theme by design. */
+:root{
+  color-scheme:dark;
+  --bg:#07130e; --panel:rgba(9,26,19,.84); --panel2:#0d241b; --ink:#eaeddc; --ink2:#a9bdb0; --line:rgba(190,220,185,.17);
+  --gold:#e3b657; --gold2:#b98a34; --gold-ink:#261903; --moss:#93c97f; --moss2:#2f6045;
+  --bad:#e8836e; --focus:#94d4f2;
+  --display:'Grenze Gotisch','Palatino Linotype',Palatino,Georgia,serif;
+  --body:'Alegreya Sans','Trebuchet MS',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html.noscroll{overflow:hidden}
+body{background-color:var(--bg);color:var(--ink);font-family:var(--body);font-size:17.5px;line-height:1.4;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:20;background:var(--bg)}
+#scene{position:fixed;inset:0;z-index:0;overflow:hidden;background:linear-gradient(180deg,#1b4034 0%,#123026 34%,#0c1f18 66%,#07130e 100%)}
+#scene svg{display:block}
+.ff{animation:tw 4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.1}50%{opacity:1}}
+#app{position:relative;z-index:1}
+.wrap{width:min(100%,640px);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h2,h3,p,ul,ol{margin:0}
+ul,ol{padding:0;list-style:none}
+.num{font-variant-numeric:tabular-nums}
+.i{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.muted{color:var(--ink2)}
+.gold{color:var(--gold);font-weight:700}
+.small{font-size:15px}
+.center{text-align:center}
+.right{text-align:right}
+
+/* HUD */
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:15;background:rgba(7,19,14,.8);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(227,182,87,.25)}
+.hud .wrap{padding-block:9px}
+.hud-row{display:flex;align-items:center;gap:12px}
+.orb{position:relative;width:54px;height:54px;flex:none}
+.orb svg{width:100%;height:100%;transform:rotate(-90deg)}
+.orb circle{fill:none;stroke-width:4}
+.orb .t{stroke:rgba(190,220,185,.18)}
+.orb .p{stroke:var(--moss);stroke-linecap:round;transition:stroke-dashoffset .5s}
+.orb b{position:absolute;inset:7px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:24px;line-height:1;color:var(--gold);background:radial-gradient(circle at 50% 30%,#1d4636,#0b1f17);box-shadow:inset 0 0 0 1px rgba(227,182,87,.45)}
+.hud-id{min-width:0;flex:1}
+.hud-name{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hud-rank{color:var(--ink2);font-size:14.5px}
+.hud-chips{display:flex;gap:6px;flex:none}
+.chipx{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-weight:700}
+.chipx .i{width:17px;height:17px;color:#f0a24c}
+.coin{width:14px;height:14px;border-radius:50%;background:var(--gold);box-shadow:inset 0 0 0 2px #0b1f17,inset 0 0 0 3px var(--gold);display:inline-block;flex:none}
+.coin.lg{width:26px;height:26px;box-shadow:inset 0 0 0 4px #0b1f17,inset 0 0 0 5px var(--gold)}
+
+/* page */
+main.wrap{padding-block:18px calc(128px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
+.ph{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding-top:4px}
+.eyebrow{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:700}
+h2{font-family:var(--display);font-weight:700;font-size:38px;line-height:1.02;text-wrap:balance;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+.orn{width:190px;height:14px;display:block;stroke:rgba(227,182,87,.6);fill:var(--gold);margin-top:2px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sec-t{font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink2)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row.sb{justify-content:space-between}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+@media (max-width:360px){.two{grid-template-columns:1fr}}
+
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 10px 26px rgba(0,0,0,.28)}
+.card::before{content:"";position:absolute;inset:4px;border:1px solid rgba(227,182,87,.08);border-radius:10px;pointer-events:none}
+.gilt::after{content:"";position:absolute;inset:-1px;border:2px solid var(--gold);border-radius:15px;pointer-events:none;
+  -webkit-mask:linear-gradient(#000 0 0) top left / 22px 22px no-repeat,linear-gradient(#000 0 0) top right / 22px 22px no-repeat,linear-gradient(#000 0 0) bottom left / 22px 22px no-repeat,linear-gradient(#000 0 0) bottom right / 22px 22px no-repeat;
+  mask:linear-gradient(#000 0 0) top left / 22px 22px no-repeat,linear-gradient(#000 0 0) top right / 22px 22px no-repeat,linear-gradient(#000 0 0) bottom left / 22px 22px no-repeat,linear-gradient(#000 0 0) bottom right / 22px 22px no-repeat}
+
+/* buttons, forms */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:8px 20px;border-radius:12px;border:1px solid #f4d48c;background:linear-gradient(180deg,#efc766,#c8913a);color:var(--gold-ink);font-weight:700;font-size:16px;letter-spacing:.03em;text-decoration:none;box-shadow:0 3px 0 #7b5518,0 8px 16px rgba(0,0,0,.3)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #7b5518}
+.btn.ghost{background:rgba(255,255,255,.04);color:var(--ink);border-color:rgba(227,182,87,.45);box-shadow:none}
+.btn.sm{min-height:38px;padding:4px 14px;font-size:15px;border-radius:10px}
+.btn.danger{background:transparent;border-color:var(--bad);color:var(--bad);box-shadow:none}
+.btn.danger.armed{background:var(--bad);color:#2a0d07}
+.btn.big-btn{width:100%;min-height:52px;font-size:17px}
+.btn:disabled{opacity:.42;cursor:not-allowed;box-shadow:none}
+.chip{min-height:40px;padding:3px 16px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:16px;font-weight:500}
+.chip[aria-pressed="true"],.chip[aria-checked="true"]{background:var(--gold);border-color:var(--gold);color:var(--gold-ink);font-weight:700}
+input[type=text],input[type=number],input[type=date],textarea,select{width:100%;min-height:46px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:rgba(3,12,8,.55);box-shadow:inset 0 1px 3px rgba(0,0,0,.4)}
+textarea{min-height:92px;resize:vertical}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:15px;color:var(--ink2)}
+label.check{display:flex;gap:10px;align-items:center;min-height:44px}
+label.check input{width:22px;height:22px;accent-color:var(--gold)}
+input::placeholder,textarea::placeholder{color:var(--ink2);opacity:.65}
+.ico{width:44px;height:44px;border:0;background:none;display:grid;place-items:center;color:var(--ink2)}
+.tag{display:inline-block;font-size:14px;padding:2px 10px;border-radius:99px;border:1px solid var(--line);color:var(--ink2)}
+.tag.ok{border-color:var(--moss);color:var(--moss)}
+
+/* today */
+.mission{display:flex;flex-direction:column;gap:14px;background-image:radial-gradient(120% 90% at 100% 0%,rgba(227,182,87,.13),transparent 55%)}
+.m-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.lantern{display:inline-flex;gap:6px;align-items:center;min-height:38px;padding:3px 12px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-size:15px}
+.lantern .i{width:18px;height:18px}
+.lantern[aria-pressed="true"]{background:rgba(227,182,87,.18);border-color:var(--gold);color:var(--gold);font-weight:700}
+.m-body{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.ring-lg{position:relative;width:128px;height:128px;flex:none}
+.ring-lg svg{width:100%;height:100%}
+.ring-lg circle{fill:none;stroke-width:10}
+.ring-lg .t{stroke:rgba(190,220,185,.16)}
+.ring-lg .p{stroke:var(--moss);stroke-linecap:round;transition:stroke-dashoffset .5s}
+.ring-lg .mk{stroke:var(--gold);stroke-width:3.5;stroke-linecap:round;fill:none}
+.ring-c{position:absolute;inset:0;display:grid;place-content:center;text-align:center;gap:2px}
+.big{font-family:var(--display);font-weight:700;font-size:40px;line-height:.95}
+.m-text{flex:1;min-width:170px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.m-kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.m-title{font-family:var(--display);font-weight:700;font-size:28px;line-height:1.05}
+.chest{display:flex;flex-direction:column;gap:8px;padding:0 2px}
+.segs{display:flex;gap:4px}
+.segs i{flex:1;height:10px;border-radius:3px;background:rgba(255,255,255,.1);transform:skewX(-18deg)}
+.segs i.on{background:linear-gradient(180deg,#b6e0a2,var(--moss));box-shadow:0 0 8px rgba(147,201,127,.4)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:14px;min-height:140px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.tile.done{border-color:rgba(227,182,87,.65);background:linear-gradient(155deg,rgba(47,96,69,.7),var(--panel))}
+.t-main{width:100%;height:100%;min-height:140px;padding:14px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:none;border:0;text-align:left;border-radius:14px}
+.t-ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(147,201,127,.14);color:var(--moss);margin-bottom:4px;font-size:26px;line-height:1}
+.tile.done .t-ic{background:rgba(227,182,87,.2);color:var(--gold)}
+.t-name{font-weight:700;font-size:17.5px;line-height:1.12}
+.t-hint{font-size:14px;color:var(--ink2);line-height:1.22;padding-right:6px}
+.t-xp{margin-top:auto;padding-top:6px;font-weight:700;color:var(--gold);font-size:14.5px}
+.t-seal{position:absolute;right:12px;bottom:12px;width:28px;height:28px}
+.t-seal svg{width:100%;height:100%}
+.t-seal .d{fill:none;stroke:var(--ink2);stroke-width:1.8;stroke-linejoin:round}
+.t-seal .c{fill:none;stroke:var(--gold-ink);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.tile.done .t-seal .d{fill:var(--gold);stroke:var(--gold)}
+.tile.done .t-seal .c{opacity:1}
+.t-more{position:absolute;top:4px;right:4px;width:44px;height:44px;border:0;background:none;color:var(--ink2);display:grid;place-items:center}
+.tile.add{border-style:dashed;border-color:rgba(227,182,87,.4);background:rgba(255,255,255,.02);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--gold)}
+.tile.add .t-ic{background:rgba(227,182,87,.14);color:var(--gold)}
+.tile.add .t-name{color:var(--ink)}
+
+/* study */
+.timer{display:grid;place-items:center;gap:14px}
+.ringbox{position:relative;width:min(250px,72vw);aspect-ratio:1;max-width:100%}
+.ringbox::before{content:"";position:absolute;inset:-12%;background:radial-gradient(circle,rgba(227,182,87,.18),transparent 62%)}
+.ringbox svg{position:relative;width:100%;height:100%;transform:rotate(-90deg)}
+.ringbox circle{fill:none;stroke-width:7}
+.ringbox .trk{stroke:rgba(190,220,185,.18)}
+.ringbox .prg{stroke:var(--gold);stroke-linecap:round;transition:stroke-dashoffset .5s linear}
+.ringc{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ringc .tt{font-family:var(--display);font-weight:700;font-size:60px;line-height:1;font-variant-numeric:tabular-nums}
+.ringc .tl{font-size:15px;color:var(--ink2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.rate{display:flex;gap:8px}
+.rate button{flex:1;min-height:46px;border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:12px;font-weight:700}
+.rate button[aria-checked="true"]{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.list{display:flex;flex-direction:column}
+.sess{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:11px 0;border-top:1px solid var(--line);align-items:center}
+.sess:last-child{border-bottom:1px solid var(--line)}
+.xp{font-weight:700;color:var(--gold);white-space:nowrap}
+.tri{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.tri b{display:block;font-family:var(--display);font-weight:700;font-size:30px}
+.tri span{font-size:14px;color:var(--ink2)}
+
+/* beliefs */
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);margin:0}
+.st{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:13.5px;color:var(--ink2)}
+.st::before{content:"";position:absolute;top:17px;left:-50%;right:50%;height:2px;background:var(--line)}
+.st:first-child::before{display:none}
+.st .n{position:relative;z-index:1;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);background:var(--panel2);font-weight:700}
+.st .n .i{width:18px;height:18px;stroke-width:2.4}
+.st.done .n{background:var(--moss2);border-color:var(--moss);color:var(--ink)}
+.st.done::before,.st.cur::before{background:var(--moss)}
+.st.cur .n{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 4px rgba(227,182,87,.16)}
+.st.cur{color:var(--ink);font-weight:700}
+.step{display:flex;flex-direction:column;gap:10px}
+.step-h{font-size:13px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--gold)}
+.lock{border:1px dashed rgba(227,182,87,.45);border-radius:12px;padding:14px;color:var(--ink2);display:flex;gap:12px;align-items:center}
+.qa{display:flex;flex-direction:column;gap:8px;padding:13px 0;border-top:1px solid var(--line)}
+.qa:last-child{border-bottom:1px solid var(--line)}
+.qn{display:inline-grid;place-items:center;width:24px;height:24px;margin-right:8px;border-radius:50%;background:rgba(227,182,87,.16);color:var(--gold);font-size:14px;font-weight:700}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;min-height:46px;border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:12px;font-weight:700}
+.seg button[aria-checked="true"]{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center}
+.compare b{display:block;font-family:var(--display);font-weight:700;font-size:32px}
+.belief{display:flex;flex-direction:column;gap:6px}
+.bl{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:700}
+.btxt{overflow-wrap:anywhere}
+.btxt.neg{color:var(--ink2)}
+.btxt.pos{font-weight:700;color:var(--ink)}
+.qlist{display:flex;flex-direction:column;gap:4px}
+
+/* treasury */
+.purse{display:flex;flex-direction:column;align-items:center;gap:6px}
+.purse-n{display:inline-flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:52px;line-height:1}
+.items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.item{display:flex;flex-direction:column;gap:6px}
+.i-name{font-size:18px;line-height:1.15;overflow-wrap:anywhere}
+.cost{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--gold);margin-top:auto}
+.troph{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tr{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;font-size:14px;line-height:1.2;color:var(--ink2);padding:12px 6px;border:1px solid var(--line);border-radius:14px;background:rgba(9,26,19,.7)}
+.tr b{color:var(--ink2);font-size:14.5px}
+.hexb{width:46px;height:52px;display:grid;place-items:center;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:rgba(255,255,255,.1);color:rgba(255,255,255,.35)}
+.tr.on{border-color:rgba(227,182,87,.5)}
+.tr.on b{color:var(--ink)}
+.tr.on .hexb{background:linear-gradient(160deg,#f3d27c,#b98a34);color:var(--gold-ink)}
+
+/* chronicle */
+.stat-row{display:flex;flex-direction:column;gap:6px}
+.mbar{height:9px;border-radius:5px;background:rgba(255,255,255,.09);overflow:hidden}
+.mbar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--moss2),var(--moss))}
+.scroll{overflow-x:auto}
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--ink2);font-family:var(--body);font-size:11px}
+.chart .v{fill:var(--ink);font-weight:700}
+.chart .b{fill:var(--moss)}
+.chart .b.under{fill:#3b5a4a}
+.chart .gl{stroke:var(--gold);stroke-dasharray:4 3;stroke-width:1.3}
+.chart .ax{stroke:var(--line);stroke-width:1}
+table.grid{border-collapse:collapse;width:100%;min-width:320px}
+table.grid th{font-weight:500;text-align:left;font-size:15px;padding:5px 6px 5px 0;white-space:nowrap}
+table.grid td{text-align:center;padding:5px 0}
+table.grid thead th{text-align:center;color:var(--ink2);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.dot{display:inline-block;width:14px;height:14px;transform:rotate(45deg) scale(.8);border:2px solid rgba(190,220,185,.3)}
+.dot.on{background:var(--gold);border-color:var(--gold)}
+
+/* sheet */
+.backdrop{position:fixed;inset:0;background:rgba(2,8,5,.66);z-index:40}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--panel2);border-top:1px solid rgba(227,182,87,.5);border-radius:22px 22px 0 0;max-height:88%;overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -12px 40px rgba(0,0,0,.5)}
+.sheet:focus{outline:none}
+.sheet .wrap{padding-top:10px;display:flex;flex-direction:column;gap:12px}
+.grab{width:42px;height:4px;border-radius:2px;background:var(--line);margin:0 auto}
+.sh-t{font-family:var(--display);font-weight:700;font-size:28px;line-height:1.05}
+
+/* dock, toast */
+.dock{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:30;pointer-events:none}
+.dock-in{pointer-events:auto;display:grid;grid-template-columns:1fr 1fr 1.25fr 1fr 1fr;align-items:end;background:rgba(7,19,14,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(227,182,87,.32);border-radius:24px;padding:6px;box-shadow:0 12px 32px rgba(0,0,0,.55)}
+.dock a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px 5px;min-height:54px;color:var(--ink2);text-decoration:none;font-size:12.5px;letter-spacing:.02em;border-radius:16px}
+.dock a .i{width:24px;height:24px}
+.dock a[aria-current="page"]{color:var(--gold);font-weight:700}
+.dock a.fab{margin-top:-30px;padding-top:0}
+.orbtn{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 50% 28%,#3f7a58,#143627);border:2px solid var(--gold);box-shadow:0 0 0 4px rgba(7,19,14,.92),0 8px 18px rgba(0,0,0,.5),0 0 22px rgba(227,182,87,.28);color:var(--gold)}
+.orbtn .i{width:28px;height:28px}
+.fab[aria-current="page"] .orbtn{background:radial-gradient(circle at 50% 28%,#f3d27c,#b98a34);color:var(--gold-ink)}
+.toast{position:fixed;left:0;right:0;bottom:calc(98px + env(safe-area-inset-bottom,0px));z-index:50;pointer-events:none;display:flex;justify-content:center;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+.toast div{background:var(--ink);color:#0b1f17;padding:10px 18px;border-radius:12px;font-weight:700;max-width:100%;text-align:center;box-shadow:0 6px 22px rgba(0,0,0,.5)}
+.toast div.lvl{background:linear-gradient(180deg,#f3d27c,#c8913a);color:var(--gold-ink);font-family:var(--display);font-size:24px;border:1px solid #f4d48c}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.ff{opacity:.6}}
+</style>
+
+</head>
+<body>
+<div id="scene" aria-hidden="true"></div>
+<div id="app">
+<header class="hud"><div class="wrap" id="hero"></div></header>
+<main class="wrap" id="view"></main>
+</div>
+<nav class="dock" aria-label="Główna nawigacja"><div class="wrap"><div class="dock-in" id="tabs"></div></div></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="sheet"></div>
+
+<script>
+'use strict';
+/* ---------- helpers ---------- */
+const KEY='szlak-adepta-v1';
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const dkey=(d=new Date())=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>dkey();
+const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
+const fmtMin=m=>{m=Math.round(m);return m>=60?Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':''):m+' min'};
+const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+const dayShift=n=>{const d=new Date();d.setDate(d.getDate()+n);return d};
+const WD=['nd','pn','wt','śr','cz','pt','sb'];
+
+/* ---------- content ---------- */
+const Q5=[
+  'Czy to przekonanie jest oparte na faktach?',
+  'Czy to przekonanie chroni moje życie lub zdrowie?',
+  'Czy to przekonanie pomaga mi osiągnąć dalsze lub bliższe cele?',
+  'Czy to przekonanie pomaga mi unikać lub rozwiązywać konflikty?',
+  'Czy to przekonanie pozwala mi czuć się tak, jak chcę?'
+];
+const BASE=[
+  {id:'gym',name:'Siłownia',hint:'Trening wykonany',xp:60,attr:'Siła'},
+  {id:'food',name:'Zdrowe jedzenie',hint:'Posiłki zgodne z planem',xp:40,attr:'Witalność'},
+  {id:'sleep',name:'Zdrowy sen',hint:'Pora snu i pobudki dotrzymana',xp:50,attr:'Wypoczynek'},
+  {id:'hypno',name:'Autohipnoza',hint:'Codzienna praktyka z książki Piotra Matejuka',xp:40,attr:'Wola'},
+  {id:'weight',name:'Granie w odchudzanie',hint:'Krok dnia z programu Zenjaskiniowca',xp:30,attr:'Witalność'},
+  {id:'belief',name:'Powtórka przekonań',hint:'Przeczytaj swoje nowe przekonania',xp:30,attr:'Wola'}
+];
+const RANKS=[[1,'Rekrut'],[3,'Czeladnik'],[5,'Adept'],[8,'Łowca Wiedzy'],[12,'Mistrz Szlaku'],[17,'Mędrzec'],[23,'Wielki Mędrzec']];
+const rank=L=>{let r=RANKS[0][1];for(const [n,t] of RANKS)if(L>=n)r=t;return r};
+const lvl=xp=>{let L=1,need=120,rest=xp;while(rest>=need){rest-=need;L++;need=120+40*(L-1)}return{L,cur:rest,need}};
+
+/* ---------- state ---------- */
+function def(){return{rev:0,profile:{name:'Adept',goal:180,min:30,sleep:7},
+  sessions:[],days:{},beliefs:[],customQuests:[],notes:{},lastTopic:'',
+  rewards:[
+    {id:'r1',name:'Odcinek ulubionego serialu',cost:30,minLevel:1,ex:true},
+    {id:'r2',name:'Ulubiony deser',cost:60,minLevel:1,ex:true},
+    {id:'r3',name:'Wieczór z grą',cost:100,minLevel:2,ex:true},
+    {id:'r4',name:'Nowa książka',cost:250,minLevel:4,ex:true}
+  ],purchases:[],timer:null,archive:{xp:0,min:0,n:0,q:{}},best:0};}
+function norm(o){const d=def();const s=Object.assign(d,o||{});s.profile=Object.assign(def().profile,(o&&o.profile)||{});s.archive=Object.assign({xp:0,min:0,n:0,q:{}},(o&&o.archive)||{});if(!s.archive.q)s.archive.q={};return s}
+let S=def();
+const UI={tab:'today',belief:null,armed:null,note:null,fin:null,edit:null,addQ:false,addR:false,pre:50,sig:'',lastLevel:null,sync:'local',ready:false};
+const TABS={dzis:'today',nauka:'study',przekonania:'beliefs',skarbiec:'treasury',kronika:'chronicle'};
+
+/* ---------- persistence ---------- */
+let ref=null,saveT=null,saving=false,again=false;
+function persist(){
+  S.rev=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  if(ref){clearTimeout(saveT);saveT=setTimeout(flush,700)}
+}
+async function flush(){
+  saveT=null;
+  if(!ref)return;
+  if(saving){again=true;return}
+  saving=true;
+  try{await ref.set(JSON.parse(JSON.stringify(S)));UI.sync='cloud'}catch(e){UI.sync='error'}
+  saving=false;
+  if(again){again=false;flush()}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&saveT){clearTimeout(saveT);flush()}});
+
+function compact(){
+  const cut=dkey(dayShift(-100));
+  const keep=[];
+  for(const s of S.sessions){if(s.date<cut){S.archive.xp+=s.xp;S.archive.min+=s.min;S.archive.n++}else keep.push(s)}
+  S.sessions=keep;
+  for(const k of Object.keys(S.days)){
+    if(k<cut){const d=S.days[k];for(const q in d.done){S.archive.xp+=d.done[q];S.archive.q[q]=(S.archive.q[q]||0)+1}S.archive.xp+=d.bonus||0;delete S.days[k]}
+  }
+}
+
+/* ---------- derived ---------- */
+const dayRef=k=>S.days[k]||(S.days[k]={done:{},hard:false,sleepH:null,bonus:0});
+const studyMin=k=>S.sessions.reduce((a,s)=>s.date===k?a+s.min:a,0);
+function totalXP(){
+  let x=S.archive.xp;
+  for(const s of S.sessions)x+=s.xp;
+  for(const k in S.days){const d=S.days[k];for(const q in d.done)x+=d.done[q];x+=d.bonus||0}
+  for(const b of S.beliefs){x+=b.xp||0;for(const r in (b.reviews||{}))x+=b.reviews[r]}
+  return x;
+}
+const spent=()=>S.purchases.reduce((a,p)=>a+p.cost,0);
+const gold=()=>Math.max(0,Math.floor(totalXP()/5)-spent());
+function streak(){
+  let n=0;const d=new Date();
+  if(studyMin(dkey(d))<S.profile.min)d.setDate(d.getDate()-1);
+  while(studyMin(dkey(d))>=S.profile.min&&n<400){n++;d.setDate(d.getDate()-1)}
+  return n;
+}
+function active(k){
+  const d=S.days[k];
+  if(d&&d.hard)return[BASE.find(q=>q.id==='sleep')];
+  return[...BASE,...S.customQuests.filter(q=>q.daily||q.date===k)];
+}
+function isFull(k){
+  const d=S.days[k]||{done:{},hard:false};
+  const goal=d.hard?S.profile.min:S.profile.goal;
+  return studyMin(k)>=goal&&active(k).every(q=>d.done[q.id]!=null);
+}
+const syncBonus=k=>{dayRef(k).bonus=isFull(k)?50:0};
+const findQuest=id=>BASE.find(q=>q.id===id)||S.customQuests.find(q=>q.id===id);
+function counts(){
+  const c=Object.assign({},S.archive.q);
+  for(const k in S.days)for(const q in S.days[k].done)c[q]=(c[q]||0)+1;
+  return c;
+}
+const totalMin=()=>S.archive.min+S.sessions.reduce((a,s)=>a+s.min,0);
+const weekMin=()=>{let m=0;for(let i=0;i<7;i++)m+=studyMin(dkey(dayShift(-i)));return m};
+
+/* ---------- beliefs ---------- */
+const blank=()=>({text:'',a:Q5.map(()=>({v:null,n:''}))});
+const ansN=side=>side.a.filter(x=>x.v).length;
+const yesN=side=>side.a.filter(x=>x.v==='tak').length;
+const hasText=side=>side.text.trim().length>=3;
+function canFinish(b){return hasText(b.neg)&&hasText(b.pos)&&ansN(b.neg)===5&&ansN(b.pos)===5}
+const gateSig=b=>[hasText(b.neg),ansN(b.neg)===5,hasText(b.pos),canFinish(b)].join();
+function beliefStep(b){
+  if(b.status==='done')return'Przekute';
+  if(!hasText(b.neg))return'Szkic';
+  if(ansN(b.neg)<5)return'Pytania do starego przekonania '+ansN(b.neg)+'/5';
+  if(!hasText(b.pos))return'Czeka na nowe przekonanie';
+  if(ansN(b.pos)<5)return'Pytania do nowego przekonania '+ansN(b.pos)+'/5';
+  return'Gotowe do zapisu';
+}
+
+/* ---------- icons & scene ---------- */
+UI.sheet=null;UI.sheetNew=false;
+const IC={
+  today:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  beliefs:'<path d="M12 3l8 9-8 9-8-9z"/><path d="M12 8.5v7M8.5 12h7"/>',
+  study:'<path d="M6 3h12M6 21h12M7 3v4l5 5-5 5v4M17 3v4l-5 5 5 5v4"/>',
+  treasury:'<path d="M4 11h16v9H4zM4 11a8 8 0 0 1 16 0"/><path d="M12 14v3"/>',
+  chronicle:'<path d="M4 20V11M10 20V4M16 20v-9M22 20H2"/>',
+  gym:'<path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12"/>',
+  food:'<path d="M12 7c-4-3-8 0-7 5 1 5 4 9 7 9s6-4 7-9c1-5-3-8-7-5z"/><path d="M12 7c0-2 1-3.5 3-4.5"/>',
+  sleep:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  dice:'<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="9" cy="15" r="1" fill="currentColor"/>',
+  star:'<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>',
+  more:'<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',
+  flame:'<path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>',
+  lantern:'<path d="M9.5 3h5M10 3v2M14 3v2M8 5h8l1 4v7l-1 3H8l-1-3V9z"/><path d="M12 9v6"/>',
+  lock:'<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+const ic=(n,c='')=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
+const QI={gym:'gym',food:'food',sleep:'sleep',hypno:'eye',weight:'dice',belief:'beliefs'};
+const NAV=[['today','Dziś'],['beliefs','Przekonania'],['study','Nauka'],['treasury','Skarbiec'],['chronicle','Kronika']];
+const HREF={today:'dzis',study:'nauka',beliefs:'przekonania',treasury:'skarbiec',chronicle:'kronika'};
+const SEAL='<svg viewBox="0 0 24 24" aria-hidden="true"><path class="d" d="M12 2l10 10-10 10L2 12z"/><path class="c" d="M7.5 12.5l3 3 6-6.5"/></svg>';
+const ORN='<svg class="orn" viewBox="0 0 220 16" aria-hidden="true"><path d="M2 8h88M130 8h88" fill="none"/><path d="M110 2l5.5 6-5.5 6-5.5-6z"/><path d="M96 8c-5-6-11-6-16 0 5 5 11 5 16 0zM124 8c5-6 11-6 16 0-5 5-11 5-16 0z"/></svg>';
+const head=(eyebrow,title)=>`<header class="ph"><p class="eyebrow">${esc(eyebrow)}</p><h2>${esc(title)}</h2>${ORN}</header>`;
+
+function forestSVG(){
+  let s=11;const r=()=>(s=(s*1664525+1013904223)%4294967296)/4294967296;
+  const pine=(x,base,h,w)=>{
+    const n=5,ay=base-h,Lp=[],Rp=[];
+    for(let i=1;i<=n;i++){const hw=w/2*i/n,yb=ay+h*0.9*i/n;Lp.push([x-hw,yb],[x-hw*.5,yb]);Rp.push([x+hw,yb],[x+hw*.5,yb])}
+    const yb=ay+h*0.9;
+    const pts=[[x,ay],...Lp,[x-3,yb],[x-3,base],[x+3,base],[x+3,yb],...Rp.reverse()];
+    return 'M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')+'Z';
+  };
+  const layer=(count,base,hMin,hMax,wMin,wMax,fill,op,xs)=>{
+    let d='';
+    for(let i=0;i<count;i++){const x=xs?xs[i]:(i+.5)*400/count+(r()-.5)*28;d+=pine(x,base,hMin+r()*(hMax-hMin),wMin+r()*(wMax-wMin))}
+    return `<path d="${d}" fill="${fill}" opacity="${op}"/>`;
+  };
+  let stars='';for(let i=0;i<26;i++)stars+=`<circle cx="${(r()*400).toFixed(0)}" cy="${(r()*260).toFixed(0)}" r="${(0.5+r()*0.8).toFixed(1)}" fill="#dfe9c8" opacity="${(0.25+r()*0.4).toFixed(2)}"/>`;
+  let ff='';for(let i=0;i<14;i++){const x=(20+r()*360).toFixed(0),y=(560+r()*210).toFixed(0);
+    ff+=`<g class="ff" style="animation-delay:${(r()*5).toFixed(1)}s;animation-duration:${(3+r()*4).toFixed(1)}s"><circle cx="${x}" cy="${y}" r="5" fill="#f2e68a" opacity=".16"/><circle cx="${x}" cy="${y}" r="1.5" fill="#f6ee9c"/></g>`}
+  return `<svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMax slice" width="100%" height="100%">
+  <defs>
+    <radialGradient id="mg"><stop offset="0" stop-color="#f1f4d8" stop-opacity=".5"/><stop offset="1" stop-color="#f1f4d8" stop-opacity="0"/></radialGradient>
+    <linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc9ae" stop-opacity="0"/><stop offset=".55" stop-color="#9cc9ae" stop-opacity=".26"/><stop offset="1" stop-color="#9cc9ae" stop-opacity="0"/></linearGradient>
+  </defs>
+  ${stars}
+  <circle cx="302" cy="104" r="78" fill="url(#mg)"/><circle cx="302" cy="104" r="19" fill="#eef2d6" opacity=".92"/>
+  <path d="M0 540C50 490 100 520 160 486S290 450 400 506V800H0Z" fill="#12312a"/>
+  ${layer(10,640,110,170,46,66,'#17392e',.95)}
+  <rect x="0" y="500" width="400" height="170" fill="url(#fog)"/>
+  ${layer(7,720,170,250,70,96,'#0e271d',.98)}
+  <rect x="0" y="600" width="400" height="160" fill="url(#fog)" opacity=".8"/>
+  ${layer(5,830,280,400,110,150,'#07150e',1,[18,92,318,372,-30])}
+  ${ff}</svg>`;
+}
+
+/* ---------- HUD ---------- */
+function heroHTML(){
+  const xp=totalXP(),l=lvl(xp),st=streak(),g=gold(),C=2*Math.PI*24;
+  return `<div class="hud-row">
+    <div class="orb"><svg viewBox="0 0 56 56" aria-hidden="true"><circle class="t" cx="28" cy="28" r="24"/><circle class="p" cx="28" cy="28" r="24" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-l.cur/l.need)).toFixed(1)}"/></svg><b>${l.L}</b></div>
+    <div class="hud-id"><p class="hud-name">${esc(S.profile.name||'Adept')}</p><p class="hud-rank num">${rank(l.L)} · ${l.cur}/${l.need} XP</p></div>
+    <div class="hud-chips">
+      <span class="chipx" aria-label="Płomień nauki: ${st} dni z rzędu">${ic('flame')}<span class="num">${st}</span></span>
+      <span class="chipx" aria-label="Złoto: ${g}"><i class="coin" aria-hidden="true"></i><span class="num">${g}</span></span></div></div>`;
+}
+
+/* ---------- Today ---------- */
+function tile(q,d){
+  const done=d.done[q.id]!=null;
+  const hint=q.id==='sleep'&&d.sleepH!=null&&d.sleepH!==''?d.sleepH+' h snu':(q.hint||(q.daily?'Codziennie':'Tylko dziś'));
+  return `<div class="tile ${done?'done':''}">
+    <button class="t-main" role="checkbox" aria-checked="${done}" data-act="q" data-id="${esc(q.id)}">
+      <span class="t-ic">${ic(QI[q.id]||'star')}</span>
+      <span class="t-name">${esc(q.name)}</span>
+      <span class="t-hint">${esc(hint)}</span>
+      <span class="t-xp num">+${done?d.done[q.id]:q.xp} XP</span>
+      <span class="t-seal">${SEAL}</span>
+    </button>
+    <button class="t-more" data-act="sheet" data-id="${esc(q.id)}" aria-label="Szczegóły i notatki: ${esc(q.name)}">${ic('more')}</button></div>`;
+}
+function viewToday(){
+  const k=today(),d=S.days[k]||{done:{},hard:false,sleepH:null,bonus:0};
+  const hard=d.hard,goal=hard?S.profile.min:S.profile.goal,m=studyMin(k);
+  const list=active(k);
+  const doneN=list.filter(q=>d.done[q.id]!=null).length;
+  const date=new Date().toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'});
+  const R2=54,C2=2*Math.PI*R2,frac=clamp(m/goal,0,1),mf=clamp(S.profile.min/goal,0,1);
+  const total=list.length+1,got=doneN+(m>=goal?1:0);
+  const left=BASE.length-(hard?1:0);
+  const flame=m>=S.profile.min?'Płomień dziś podtrzymany.':'Jeszcze '+(S.profile.min-m)+' min do podtrzymania płomienia.';
+  const segs=Array.from({length:total},(_,i)=>`<i class="${i<got?'on':''}"></i>`).join('');
+  return `
+  <section class="card gilt mission" aria-label="Główna misja">
+    <div class="m-top"><p class="eyebrow">${esc(date)}</p>
+      <button class="lantern" data-act="hard" aria-pressed="${hard}">${ic('lantern')}Trudny dzień</button></div>
+    <div class="m-body">
+      <div class="ring-lg" role="img" aria-label="Nauka dziś: ${m} z ${goal} minut">
+        <svg viewBox="0 0 128 128" aria-hidden="true"><circle class="t" cx="64" cy="64" r="${R2}" transform="rotate(-90 64 64)"/>
+          <circle class="p" cx="64" cy="64" r="${R2}" transform="rotate(-90 64 64)" stroke-dasharray="${C2.toFixed(1)}" stroke-dashoffset="${(C2*(1-frac)).toFixed(1)}"/>
+          ${!hard&&mf<1?`<g transform="rotate(${(mf*360).toFixed(1)} 64 64)"><path class="mk" d="M64 3v16"/></g>`:''}</svg>
+        <div class="ring-c"><span class="big num">${m}</span><span class="small muted num">/ ${goal} min</span></div></div>
+      <div class="m-text"><p class="m-kicker">Główna misja</p><h3 class="m-title">Nauka na psychologię</h3>
+        <p class="small muted">${flame}${hard?'':' Złota kreska to minimum ('+S.profile.min+' min).'}</p>
+        <a class="btn" href="#nauka">Rozpocznij sesję</a></div></div>
+    ${hard?`<p class="small muted">Tryb minimalny: liczy się nauka (${S.profile.min} min) i sen. Reszta poczeka, a płomień nie zgaśnie.</p>`:''}
+  </section>
+  <section class="chest" aria-label="Postęp dnia">
+    <div class="row sb"><span class="sec-t">Skrzynia dnia</span><span class="small ${d.bonus>0?'gold':'muted'} num">${d.bonus>0?'Bonus +50 XP zdobyty':got+' / '+total+' · bonus +50 XP'}</span></div>
+    <div class="segs">${segs}</div></section>
+  <section class="sec">
+    <div class="sec-h"><span class="sec-t">Zlecenia poboczne</span><span class="small muted num">${doneN} / ${list.length}</span></div>
+    <div class="tiles">${list.map(q=>tile(q,d)).join('')}
+      <button class="tile add" data-act="sheetadd"><span class="t-ic">+</span><span class="t-name">Własne zlecenie</span></button></div>
+    ${hard&&left>0?`<p class="small muted">Odłożone na lepszy dzień: ${left} zleceń.</p>`:''}
+  </section>`;
+}
+
+/* ---------- Study ---------- */
+const R=88,CIRC=2*Math.PI*R;
+function ratingRow(name,val){
+  const w=name==='Skupienie'?'focus':'und';
+  return `<div class="rate" role="radiogroup" aria-label="${name}">${[1,2,3,4,5].map(n=>`<button role="radio" aria-checked="${val===n}" data-act="rate" data-w="${w}" data-n="${n}">${n}</button>`).join('')}</div>`;
+}
+function finHTML(){
+  const f=UI.fin;
+  const avg=(f.focus+f.und)/2,mult=0.6+0.2*(avg-1),xp=Math.round(Math.max(1,+f.min||0)*mult);
+  return `<section class="card gilt sec" aria-label="Zapis sesji">
+    <h3 class="m-title">${f.src==='timer'?'Sesja zakończona':f.src==='early'?'Sesja przerwana':'Dodaj sesję'}</h3>
+    <label class="f">Czas nauki (min)<input id="fmin" data-in="fmin" type="number" inputmode="numeric" min="1" max="600" value="${esc(f.min)}"></label>
+    <label class="f">Temat<input id="ftopic" data-in="ftopic" type="text" maxlength="80" value="${esc(f.topic)}" placeholder="np. Psychologia poznawcza"></label>
+    ${f.src==='manual'?`<label class="f">Data<input id="fdate" data-in="fdate" type="date" value="${esc(f.date)}" max="${today()}"></label>`:''}
+    <div class="sec"><span class="sec-t">Skupienie</span>${ratingRow('Skupienie',f.focus)}<div class="row sb small muted"><span>rozproszony</span><span>pełne skupienie</span></div></div>
+    <div class="sec"><span class="sec-t">Zrozumienie materiału</span>${ratingRow('Zrozumienie',f.und)}<div class="row sb small muted"><span>mgła</span><span>jasne</span></div></div>
+    <p class="small muted" id="finxp">Nagroda: +${xp} XP. Wyższa jakość nauki daje więcej XP na każdą minutę.</p>
+    <div class="row"><button class="btn" data-act="savefin">Zapisz sesję</button><button class="btn ghost" data-act="cancelfin">Odrzuć</button></div>
+  </section>`;
+}
+function viewStudy(){
+  const t=S.timer,k=today();
+  const todays=S.sessions.filter(s=>s.date===k).sort((a,b)=>b.t-a.t);
+  const wk=S.sessions.filter(s=>s.date>=dkey(dayShift(-6)));
+  const avg=key=>wk.length?(wk.reduce((a,s)=>a+s[key],0)/wk.length).toFixed(1):'–';
+  const wm=weekMin();
+  let timer;
+  if(t){
+    const rem=Math.max(0,Math.ceil((t.endAt-Date.now())/1000));
+    timer=`<div class="timer">
+      <div class="ringbox"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="trk" cx="100" cy="100" r="${R}"/><circle id="tr" class="prg" cx="100" cy="100" r="${R}" stroke-dasharray="${CIRC.toFixed(1)}" stroke-dashoffset="${(CIRC*(1-rem/(t.min*60))).toFixed(1)}"/></svg>
+        <div class="ringc"><span class="tt" id="tt">${pad(Math.floor(rem/60))}:${pad(rem%60)}</span><span class="tl">${esc(t.topic||'Głęboka praca')}</span></div></div>
+      <div class="row"><button class="btn ghost" data-act="stop">Zakończ wcześniej</button><button class="btn danger ${UI.armed==='tdisc'?'armed':''}" data-act="discard">${UI.armed==='tdisc'?'Na pewno?':'Porzuć'}</button></div>
+      <p class="small muted center">Ekran może zgasnąć. Czas liczy się od chwili startu.</p></div>`;
+  }else{
+    const pre=UI.pre;
+    timer=`<div class="timer">
+      <div class="ringbox"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="trk" cx="100" cy="100" r="${R}"/></svg>
+        <div class="ringc"><span class="tt">${pad(pre)}:00</span><span class="tl">${pre} min</span></div></div>
+      <div class="chips" role="radiogroup" aria-label="Długość sesji">${[25,50,90].map(n=>`<button class="chip" role="radio" aria-checked="${pre===n}" data-act="pre" data-n="${n}">${n} min</button>`).join('')}</div>
+      <div class="two">
+        <label class="f">Własna długość (min)<input id="cmin" data-in="cmin" type="number" inputmode="numeric" min="1" max="240" value="${[25,50,90].includes(pre)?'':pre}" placeholder="np. 40"></label>
+        <label class="f">Temat sesji<input id="topic" data-in="topic" type="text" maxlength="80" value="${esc(S.lastTopic)}" placeholder="np. Psychologia rozwojowa"></label></div>
+      <button class="btn big-btn" data-act="start">Rozpocznij sesję</button></div>`;
+  }
+  return `${head('Głęboka praca','Biblioteka')}
+  ${UI.fin?finHTML():`<section class="card gilt">${timer}</section>`}
+  ${UI.fin?'':`<div class="center"><button class="btn ghost sm" data-act="manual">Dodaj sesję ręcznie</button></div>`}
+  <section class="sec"><span class="sec-t">Ostatnie 7 dni</span>
+    <div class="card tri"><div><b class="num">${wm>=60?Math.floor(wm/60)+'h '+pad(wm%60):wm+'m'}</b><span>czas nauki</span></div><div><b class="num">${avg('focus')}</b><span>skupienie</span></div><div><b class="num">${avg('und')}</b><span>zrozumienie</span></div></div></section>
+  <section class="sec"><div class="sec-h"><span class="sec-t">Sesje dziś</span><span class="small muted num">${fmtMin(studyMin(k))}</span></div>
+    ${todays.length?`<div class="list">${todays.map(s=>`<div class="sess"><span><b>${fmtMin(s.min)}</b> · ${esc(s.topic||'Bez tematu')}</span><span class="xp num">+${s.xp} XP</span>
+      <span class="small muted">skupienie ${s.focus}/5 · zrozumienie ${s.und}/5</span>
+      <button class="btn danger sm ${UI.armed==='ds'+s.id?'armed':''}" data-act="dels" data-id="${esc(s.id)}">${UI.armed==='ds'+s.id?'Na pewno?':'Usuń'}</button></div>`).join('')}</div>`
+      :`<p class="muted">Jeszcze bez sesji. Pierwsza podtrzyma płomień po ${S.profile.min} minutach.</p>`}</section>`;
+}
+
+/* ---------- Beliefs ---------- */
+function qaHTML(side,key){
+  return Q5.map((q,i)=>{
+    const a=side.a[i];
+    return `<div class="qa"><p><span class="qn num">${i+1}</span>${esc(q)}</p>
+      <div class="seg" role="radiogroup" aria-label="Odpowiedź na pytanie ${i+1}">
+        <button role="radio" aria-checked="${a.v==='tak'}" data-act="ans" data-side="${key}" data-i="${i}" data-v="tak">Tak</button>
+        <button role="radio" aria-checked="${a.v==='nie'}" data-act="ans" data-side="${key}" data-i="${i}" data-v="nie">Nie</button></div>
+      <input id="n-${key}-${i}" type="text" data-in="bnote" data-side="${key}" data-i="${i}" maxlength="200" value="${esc(a.n)}" placeholder="Dlaczego tak uważam? (opcjonalnie)"></div>`;
+  }).join('');
+}
+function stepper(b){
+  const negOk=hasText(b.neg),negAll=ansN(b.neg)===5,posOk=hasText(b.pos),posAll=ansN(b.pos)===5;
+  const done=[negOk,negAll,negAll&&posOk,negAll&&posOk&&posAll];
+  const names=['Stare','Pytania I','Nowe','Pytania II'];
+  let cur=done.findIndex(x=>!x);if(cur<0)cur=4;
+  return `<ol class="stepper" aria-label="Postęp kuźni">${names.map((n,i)=>`<li class="st ${done[i]?'done':i===cur?'cur':''}" ${i===cur?'aria-current="step"':''}><span class="n">${done[i]?ic('check'):i+1}</span><span>${n}</span></li>`).join('')}</ol>`;
+}
+function beliefDetail(b){
+  UI.sig=gateSig(b);
+  const negOk=hasText(b.neg),negAll=ansN(b.neg)===5,posOk=hasText(b.pos);
+  const missing=[];
+  if(!negOk)missing.push('wpisz przekonanie, które chcesz zmienić');
+  if(negOk&&!negAll)missing.push('odpowiedz na wszystkie 5 pytań o to przekonanie ('+ansN(b.neg)+'/5)');
+  if(negAll&&!posOk)missing.push('wpisz nowe przekonanie');
+  if(posOk&&ansN(b.pos)<5)missing.push('odpowiedz na wszystkie 5 pytań o nowe przekonanie ('+ansN(b.pos)+'/5)');
+  return `<div><button class="btn ghost sm" data-act="bback">← Lista przekonań</button></div>
+  ${head(b.status==='done'?'Przekute przekonanie':'Kuźnia przekonań','Zmiana przekonania')}
+  ${stepper(b)}
+  <section class="card step"><span class="step-h">Krok 1 · Przekonanie, które chcę zmienić</span>
+    <textarea id="neg-text" data-in="btext" data-side="neg" maxlength="400" placeholder="Zapisz negatywne przekonanie własnymi słowami.">${esc(b.neg.text)}</textarea></section>
+  ${negOk?`<section class="card step"><span class="step-h">Krok 2 · Pięć pytań do tego przekonania</span><div>${qaHTML(b.neg,'neg')}</div>
+    <p class="small muted num">Odpowiedzi: ${ansN(b.neg)} / 5 · odpowiedzi „Tak”: ${yesN(b.neg)}</p></section>`:''}
+  <section class="card step"><span class="step-h">Krok 3 · Nowe przekonanie</span>
+    ${negAll?`<textarea id="pos-text" data-in="btext" data-side="pos" maxlength="400" placeholder="Sformułuj pozytywne kontrprzekonanie.">${esc(b.pos.text)}</textarea>`
+    :`<div class="lock">${ic('lock')}<p>Zamknięte. Odpowiedz na wszystkie pięć pytań o stare przekonanie${negOk?' ('+ansN(b.neg)+'/5)':''}, a odblokujesz miejsce na nowe.</p></div>`}</section>
+  ${negAll&&posOk?`<section class="card step"><span class="step-h">Krok 4 · Te same pięć pytań do nowego przekonania</span><div>${qaHTML(b.pos,'pos')}</div>
+    <p class="small muted num">Odpowiedzi: ${ansN(b.pos)} / 5 · odpowiedzi „Tak”: ${yesN(b.pos)}</p></section>`:''}
+  ${ansN(b.neg)===5&&ansN(b.pos)===5?`<div class="compare"><div class="card"><span class="bl">Stare: „Tak”</span><b class="num">${yesN(b.neg)} / 5</b></div><div class="card"><span class="bl">Nowe: „Tak”</span><b class="num">${yesN(b.pos)} / 5</b></div></div>`:''}
+  <section class="sec">
+    ${b.status==='done'?`<p class="tag ok" style="align-self:flex-start">Zapisane jako przekute</p>`
+      :`<button class="btn big-btn" data-act="bfinish" ${canFinish(b)?'':'disabled'}>Zapisz przekute przekonanie (+80 XP)</button>
+        ${canFinish(b)?'':`<p class="small muted">Aby zapisać: ${missing.join('; ')}.</p>`}`}
+    <div><button class="btn danger sm ${UI.armed==='db'+b.id?'armed':''}" data-act="bdel" data-id="${esc(b.id)}">${UI.armed==='db'+b.id?'Na pewno usunąć?':'Usuń przekonanie'}</button></div>
+  </section>`;
+}
+function viewBeliefs(){
+  if(UI.belief){const b=S.beliefs.find(x=>x.id===UI.belief);if(b)return beliefDetail(b);UI.belief=null}
+  const k=today();
+  const list=[...S.beliefs].sort((a,b)=>b.created-a.created);
+  return `${head('Kuźnia przekonań','Moje przekonania')}
+    <p class="muted center">Najpierw sprawdzasz stare przekonanie pięcioma pytaniami. Dopiero potem odblokowuje się miejsce na nowe, które sprawdzasz tymi samymi pytaniami.</p>
+    <button class="btn big-btn" data-act="bnew">Nowe przekonanie</button>
+    <section class="sec">
+    ${list.length?list.map(b=>{
+      const done=b.status==='done',rev=(b.reviews||{})[k]!=null;
+      return `<article class="card belief">
+        <span class="bl">Było</span><p class="btxt neg">${esc(b.neg.text||'(bez treści)')}</p>
+        ${hasText(b.pos)?`<span class="bl">Jest</span><p class="btxt pos">${esc(b.pos.text)}</p>`:''}
+        <div class="row"><span class="tag ${done?'ok':''}">${esc(beliefStep(b))}</span>${ansN(b.neg)===5&&ansN(b.pos)===5?`<span class="tag num">Tak: ${yesN(b.neg)}/5 → ${yesN(b.pos)}/5</span>`:''}</div>
+        <div class="row"><button class="btn ghost sm" data-act="bopen" data-id="${esc(b.id)}">${done?'Otwórz':'Kontynuuj'}</button>
+        ${done?`<button class="btn sm" data-act="brev" data-id="${esc(b.id)}" ${rev?'disabled':''}>${rev?'Powtórzone dziś':'Powtórzyłem dziś (+10 XP)'}</button>`:''}</div></article>`}).join('')
+    :`<div class="card"><p>Zacznij od jednego przekonania, które Ci przeszkadza. Aplikacja poprowadzi Cię przez pięć pytań i odblokuje nowe przekonanie dopiero po ostatniej odpowiedzi.</p></div>`}
+    </section>
+    <section class="sec"><span class="sec-t">Pięć pytań</span><ol class="small muted qlist">${Q5.map((q,i)=>`<li>${i+1}. ${esc(q)}</li>`).join('')}</ol></section>`;
+}
+
+/* ---------- Treasury ---------- */
+function achievements(){
+  const c=counts(),L=lvl(totalXP()).L,tm=totalMin(),st=Math.max(S.best,streak());
+  const done=S.beliefs.filter(b=>b.status==='done').length;
+  const fullDays=Object.values(S.days).filter(d=>d.bonus>0).length;
+  const A=(name,desc,val,goal)=>({name,desc,on:val>=goal,prog:Math.min(val,goal)+'/'+goal});
+  return[
+    A('Pierwszy krok','Zapisz pierwszą sesję nauki',S.archive.n+S.sessions.length,1),
+    A('Dziesięć godzin','Łącznie 10 godzin nauki',Math.floor(tm/60),10),
+    A('Pięćdziesiąt godzin','Łącznie 50 godzin nauki',Math.floor(tm/60),50),
+    A('Płomień na trzy dni','3 dni z rzędu z nauką',st,3),
+    A('Płomień na tydzień','7 dni z rzędu z nauką',st,7),
+    A('Płomień na miesiąc','30 dni z rzędu z nauką',st,30),
+    A('Kowal przekonań','Pierwsze przekute przekonanie',done,1),
+    A('Pięć przekutych','5 przekutych przekonań',done,5),
+    A('Dziesięć treningów','10 razy zaznaczona siłownia',c.gym||0,10),
+    A('Siedem dobrych nocy','7 razy zaznaczony zdrowy sen',c.sleep||0,7),
+    A('Pełny dzień','Zdobądź bonus dnia',fullDays,1),
+    A('Adept','Osiągnij 5 poziom',L,5)
+  ];
+}
+function viewTreasury(){
+  const ach=achievements(),L=lvl(totalXP()).L,g=gold();
+  const last=[...S.purchases].sort((a,b)=>b.t-a.t).slice(0,5);
+  return `${head('Skarbiec','Łupy i trofea')}
+    <section class="card gilt purse"><span class="sec-t">Twoje złoto</span><span class="purse-n num"><i class="coin lg" aria-hidden="true"></i>${g}</span>
+      <p class="small muted center">Za każde 5 XP dostajesz 1 sztukę złota. Nagrody ustalasz sam, więc to, co tu jest, to tylko punkt wyjścia.</p></section>
+    <section class="sec"><div class="sec-h"><span class="sec-t">Nagrody</span><button class="btn ghost sm" data-act="rtoggle">+ Własna nagroda</button></div>
+    <div class="items">${S.rewards.map(r=>{
+      const locked=L<r.minLevel,poor=g<r.cost;
+      return `<div class="card item"><b class="i-name">${esc(r.name)}</b>
+        <p class="small muted">${r.ex?'Przykład, zmienimy go razem. ':''}${r.minLevel>1?'Od poziomu '+r.minLevel+'.':''}</p>
+        <span class="cost num"><i class="coin" aria-hidden="true"></i>${r.cost}</span>
+        <div class="row"><button class="btn sm" data-act="buy" data-id="${esc(r.id)}" ${locked||poor?'disabled':''}>${locked?'Poziom '+r.minLevel:poor?'Za mało złota':'Odbierz'}</button>
+        <button class="btn ghost sm" data-act="redit" data-id="${esc(r.id)}">Edytuj</button></div></div>`}).join('')||'<p class="muted">Brak nagród. Dodaj pierwszą.</p>'}</div></section>
+    ${last.length?`<section class="sec"><span class="sec-t">Ostatnio odebrane</span><div class="list">${last.map(p=>`<div class="sess"><span>${esc(p.name)}</span><span class="small muted num">${esc(p.date)} · −${p.cost}</span></div>`).join('')}</div></section>`:''}
+    <section class="sec"><div class="sec-h"><span class="sec-t">Trofea</span><span class="small muted num">${ach.filter(a=>a.on).length} / ${ach.length}</span></div>
+    <div class="troph">${ach.map(a=>`<div class="tr ${a.on?'on':''}"><span class="hexb">${ic('star')}</span><b>${esc(a.name)}</b><span class="small muted">${a.on?'zdobyte':esc(a.desc)}${a.on?'':' · '+a.prog}</span></div>`).join('')}</div></section>`;
+}
+
+/* ---------- Chronicle ---------- */
+function weekChart(){
+  const days=[];for(let i=6;i>=0;i--){const d=dayShift(-i);days.push({k:dkey(d),l:WD[d.getDay()],m:studyMin(dkey(d))})}
+  const goal=S.profile.goal,mx=Math.max(goal,...days.map(d=>d.m))*1.15;
+  const W=340,H=190,x0=34,x1=332,y0=18,y1=158,bw=26;
+  const step=(x1-x0)/7;
+  const Y=v=>y1-(v/mx)*(y1-y0);
+  const bars=days.map((d,i)=>{
+    const cx=x0+step*i+step/2,h=(d.m/mx)*(y1-y0);
+    return `<rect class="b ${d.m<S.profile.min?'under':''}" x="${(cx-bw/2).toFixed(1)}" y="${(y1-h).toFixed(1)}" width="${bw}" height="${Math.max(h,d.m>0?2:0).toFixed(1)}" rx="2"/>
+      ${d.m>0?`<text class="v" x="${cx.toFixed(1)}" y="${(y1-h-4).toFixed(1)}" text-anchor="middle">${d.m}</text>`:''}
+      <text x="${cx.toFixed(1)}" y="${y1+15}" text-anchor="middle">${d.l}</text>`}).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Minuty nauki w ostatnich 7 dniach">
+    <line class="ax" x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/>
+    <line class="gl" x1="${x0}" y1="${Y(goal).toFixed(1)}" x2="${x1}" y2="${Y(goal).toFixed(1)}"/>
+    <text x="${x0-4}" y="${(Y(goal)+4).toFixed(1)}" text-anchor="end">${goal}</text>
+    <text x="${x0-4}" y="${y1+4}" text-anchor="end">0</text>${bars}</svg>`;
+}
+function habitGrid(){
+  const rows=[['study','Nauka'],['gym','Siłownia'],['food','Jedzenie'],['sleep','Sen'],['hypno','Autohipnoza'],['weight','Odchudzanie'],['belief','Przekonania']];
+  const ds=[];for(let i=6;i>=0;i--){const d=dayShift(-i);ds.push({k:dkey(d),l:WD[d.getDay()]})}
+  return `<div class="scroll"><table class="grid"><thead><tr><th></th>${ds.map(d=>`<th>${d.l}</th>`).join('')}</tr></thead><tbody>
+    ${rows.map(([id,n])=>`<tr><th>${n}</th>${ds.map(d=>{
+      const on=id==='study'?studyMin(d.k)>=S.profile.min:!!(S.days[d.k]&&S.days[d.k].done[id]!=null);
+      return `<td><span class="dot ${on?'on':''}" role="img" aria-label="${n}, ${d.l}: ${on?'tak':'nie'}"></span></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function compare(qid,label){
+  const a=[],b=[];
+  for(let i=0;i<28;i++){const k=dkey(dayShift(-i)),m=studyMin(k),d=S.days[k];
+    if(!d&&m===0)continue;
+    ((d&&d.done[qid]!=null)?a:b).push(m)}
+  const avg=x=>Math.round(x.reduce((p,c)=>p+c,0)/x.length);
+  if(a.length<3||b.length<3)return `<p class="small muted"><b>${label}:</b> za mało danych. Potrzeba co najmniej 3 dni z zadaniem i 3 bez niego (teraz ${a.length} i ${b.length}).</p>`;
+  return `<p class="small"><b>${label}:</b> w dni z zadaniem średnio ${avg(a)} min nauki (${a.length} dni), bez niego ${avg(b)} min (${b.length} dni).</p>`;
+}
+const MS=[5,10,25,50,100,250,500,1000,2500];
+const mile=v=>{for(const m of MS)if(v<m)return m;return v||1};
+function viewChronicle(){
+  const c=counts(),xp=totalXP(),l=lvl(xp),tm=totalMin(),done=S.beliefs.filter(b=>b.status==='done').length;
+  const sl=[];for(let i=0;i<7;i++){const d=S.days[dkey(dayShift(-i))];if(d&&d.sleepH!=null&&d.sleepH!=='')sl.push(+d.sleepH)}
+  const slAvg=sl.length?(sl.reduce((a,b)=>a+b,0)/sl.length).toFixed(1):null;
+  const hrs=Math.floor(tm/60);
+  const attr=[
+    ['Intelekt','nauka w godzinach',fmtMin(tm),hrs],
+    ['Siła','treningi',String(c.gym||0),c.gym||0],
+    ['Witalność','dni zdrowego jedzenia · kroki programu',(c.food||0)+' · '+(c.weight||0),(c.food||0)+(c.weight||0)],
+    ['Wypoczynek','dobre noce'+(slAvg?', średnio '+slAvg+' h (7 dni)':''),String(c.sleep||0),c.sleep||0],
+    ['Wola','praktyki autohipnozy · przekute przekonania',(c.hypno||0)+' · '+done,(c.hypno||0)+done]
+  ];
+  const syncTxt=UI.sync==='cloud'?'Postępy zapisują się w chmurze i będą na każdym Twoim urządzeniu.':UI.sync==='error'?'Zapis w chmurze się nie udał. Postępy są na razie tylko na tym urządzeniu.':'Postępy zapisują się tylko na tym urządzeniu.';
+  return `${head('Kronika','Karta łowcy')}
+    <section class="card gilt sheetcard"><div class="row sb"><div><p class="m-kicker">${rank(l.L)}</p><p class="m-title">Poziom ${l.L}</p></div>
+      <div class="right"><p class="big num">${xp}</p><p class="small muted">XP łącznie</p></div></div>
+      <div class="sec" style="margin-top:12px">${attr.map(a=>`<div class="stat-row"><div class="row sb"><span><b>${a[0]}</b> <span class="small muted">${a[1]}</span></span><b class="num">${a[2]}</b></div>
+        <div class="mbar" role="img" aria-label="${a[0]}: ${a[3]} z ${mile(a[3])}"><i style="width:${clamp(a[3]/mile(a[3])*100,2,100).toFixed(0)}%"></i></div></div>`).join('')}</div>
+      <p class="small muted num" style="margin-top:10px">Rekord płomienia: ${Math.max(S.best,streak())} dni. Pasek pokazuje drogę do najbliższego progu.</p></section>
+    <section class="sec"><span class="sec-t">Minuty nauki, 7 dni</span><div class="card">${weekChart()}<p class="small muted">Przerywana kreska to cel dzienny. Ciemne słupki są poniżej minimum.</p></div></section>
+    <section class="sec"><span class="sec-t">Zadania, 7 dni</span><div class="card">${habitGrid()}</div></section>
+    <section class="sec"><span class="sec-t">Sen, trening i nauka (28 dni)</span><div class="card sec">${compare('sleep','Zdrowy sen')}${compare('gym','Siłownia')}<p class="small muted">To zestawienie średnich, a nie dowód zależności.</p></div></section>
+    <section class="sec"><span class="sec-t">Ustawienia</span><div class="card sec">
+      <label class="f">Imię łowcy<input id="s-name" data-in="pname" type="text" maxlength="24" value="${esc(S.profile.name)}"></label>
+      <div class="two"><label class="f">Cel nauki (min/dzień)<input id="s-goal" data-in="pgoal" type="number" inputmode="numeric" min="10" max="900" value="${S.profile.goal}"></label>
+      <label class="f">Minimum (min/dzień)<input id="s-min" data-in="pmin" type="number" inputmode="numeric" min="5" max="600" value="${S.profile.min}"></label></div>
+      <p class="small muted">${esc(syncTxt)}</p>
+      <div><button class="btn danger sm ${UI.armed==='reset'?'armed':''}" data-act="reset">${UI.armed==='reset'?'Na pewno skasować wszystko?':'Zacznij od nowa'}</button></div></div></section>`;
+}
+const VIEWS={today:viewToday,study:viewStudy,beliefs:viewBeliefs,treasury:viewTreasury,chronicle:viewChronicle};
+
+/* ---------- bottom sheet ---------- */
+function sheetHTML(){
+  const s=UI.sheet;if(!s)return'';
+  let title='',body='';
+  if(s.t==='quest'){
+    const q=findQuest(s.id);if(!q){UI.sheet=null;return''}
+    const d=S.days[today()]||{};
+    const custom=!BASE.some(b=>b.id===q.id);
+    title=q.name;
+    body=`<p class="muted">${esc(q.hint||(q.daily?'Codziennie':'Tylko dziś'))}</p>
+      ${q.id==='sleep'?`<label class="f">Godziny snu tej nocy<input id="sleepH" data-in="sleepH" type="number" inputmode="decimal" min="0" max="16" step="0.5" value="${d.sleepH==null?'':esc(d.sleepH)}" placeholder="np. 7.5"></label>`:''}
+      <label class="f">Twoje kroki i ćwiczenia<textarea id="note-${esc(q.id)}" data-in="note" data-id="${esc(q.id)}" placeholder="Wpisz tu własne notatki do tego zadania.">${esc(S.notes[q.id]||'')}</textarea></label>
+      <div class="row"><button class="btn" data-act="closesheet">Gotowe</button>${custom?`<button class="btn danger ${UI.armed==='dq'+q.id?'armed':''}" data-act="delq" data-id="${esc(q.id)}">${UI.armed==='dq'+q.id?'Na pewno usunąć?':'Usuń zlecenie'}</button>`:''}</div>`;
+  }else if(s.t==='addq'){
+    title='Własne zlecenie';
+    body=`<label class="f">Nazwa<input id="nq-name" type="text" maxlength="60" placeholder="np. Powtórka fiszek"></label>
+      <label class="f">Nagroda<select id="nq-xp"><option value="20">+20 XP</option><option value="30" selected>+30 XP</option><option value="50">+50 XP</option></select></label>
+      <label class="check"><input id="nq-daily" type="checkbox"> Powtarzaj codziennie</label>
+      <div class="row"><button class="btn" data-act="addq">Dodaj zlecenie</button><button class="btn ghost" data-act="closesheet">Anuluj</button></div>`;
+  }else if(s.t==='reward'){
+    const r=S.rewards.find(x=>x.id===s.id);if(!r){UI.sheet=null;return''}
+    title='Edytuj nagrodę';
+    body=`<label class="f">Nazwa<input id="re-name" type="text" maxlength="60" value="${esc(r.name)}"></label>
+      <div class="two"><label class="f">Koszt (złoto)<input id="re-cost" type="number" inputmode="numeric" min="1" value="${r.cost}"></label>
+      <label class="f">Od poziomu<input id="re-lvl" type="number" inputmode="numeric" min="1" value="${r.minLevel}"></label></div>
+      <div class="row"><button class="btn" data-act="rsave" data-id="${esc(r.id)}">Zapisz</button><button class="btn ghost" data-act="closesheet">Anuluj</button>
+      <button class="btn danger ${UI.armed==='dr'+r.id?'armed':''}" data-act="rdel" data-id="${esc(r.id)}">${UI.armed==='dr'+r.id?'Na pewno?':'Usuń'}</button></div>`;
+  }else if(s.t==='newr'){
+    title='Własna nagroda';
+    body=`<label class="f">Nazwa nagrody<input id="nr-name" type="text" maxlength="60" placeholder="np. Wyjście na pizzę"></label>
+      <div class="two"><label class="f">Koszt (złoto)<input id="nr-cost" type="number" inputmode="numeric" min="1" value="80"></label>
+      <label class="f">Od poziomu<input id="nr-lvl" type="number" inputmode="numeric" min="1" value="1"></label></div>
+      <div class="row"><button class="btn" data-act="radd">Dodaj nagrodę</button><button class="btn ghost" data-act="closesheet">Anuluj</button></div>`;
+  }else{UI.sheet=null;return''}
+  return `<div class="backdrop" data-act="closesheet"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}" tabindex="-1"><div class="wrap"><div class="grab"></div>
+      <div class="row sb"><h3 class="sh-t">${esc(title)}</h3><button class="ico" data-act="closesheet" aria-label="Zamknij">${ic('close')}</button></div>
+      <div class="sec">${body}</div></div></div>`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  const ae=document.activeElement;
+  const fid=ae&&ae.id,ss=ae&&ae.selectionStart,se=ae&&ae.selectionEnd;
+  $('#hero').innerHTML=heroHTML();
+  $('#view').innerHTML=VIEWS[UI.tab]();
+  $('#tabs').innerHTML=NAV.map(([t,l])=>`<a class="${t==='study'?'fab':''}" href="#${HREF[t]}" ${t===UI.tab?'aria-current="page"':''}>${t==='study'?`<span class="orbtn">${ic(t)}</span>`:ic(t)}<span>${l}</span></a>`).join('');
+  $('#sheet').innerHTML=sheetHTML();
+  document.documentElement.classList.toggle('noscroll',!!UI.sheet);
+  if(UI.sheet&&UI.sheetNew){UI.sheetNew=false;const p=$('#sheet .sheet');if(p)p.focus({preventScroll:true})}
+  else if(fid){const n=document.getElementById(fid);if(n){try{n.focus({preventScroll:true});if(ss!=null)n.setSelectionRange(ss,se)}catch(e){}}}
+}
+function commit(){
+  persist();render();
+  const L=lvl(totalXP()).L;
+  if(UI.lastLevel!=null&&L>UI.lastLevel)toast('Nowy poziom: '+L+' · '+rank(L),true);
+  UI.lastLevel=L;
+  const st=streak();if(st>S.best){S.best=st;persist()}
+}
+let toastT=null;
+function toast(msg,lv){
+  const t=$('#toast');t.innerHTML=`<div class="${lv?'lvl':''}">${esc(msg)}</div>`;
+  clearTimeout(toastT);toastT=setTimeout(()=>{t.innerHTML=''},lv?3200:2200);
+}
+function route(){
+  const h=(location.hash||'').replace('#','');
+  const t=TABS[h]||'today';
+  if(t!==UI.tab){UI.tab=t;UI.armed=null;UI.sheet=null;window.scrollTo(0,0)}
+}
+window.addEventListener('hashchange',()=>{route();render()});
+
+/* ---------- timer ---------- */
+let AC=null;
+function unlockAudio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}}
+function beep(){
+  try{if(!AC)return;const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime;o.type='sine';o.frequency.value=660;
+    g.gain.setValueAtTime(.0001,n);g.gain.exponentialRampToValueAtTime(.25,n+.05);g.gain.exponentialRampToValueAtTime(.0001,n+1.2);
+    o.connect(g);g.connect(AC.destination);o.start();o.stop(n+1.3)}catch(e){}
+}
+let wake=null;
+async function keepAwake(){try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen')}catch(e){}}
+function releaseAwake(){try{if(wake){wake.release();wake=null}}catch(e){}}
+function startFin(src,min,topic){UI.fin={src,min,topic:topic||'',focus:3,und:3,date:today()}}
+function timerDone(early){
+  const t=S.timer;if(!t)return;
+  const el=early?Math.floor((Date.now()-t.start)/60000):t.min;
+  S.timer=null;releaseAwake();
+  if(el<1){persist();render();toast('Sesja krótsza niż minuta nie została zapisana');return}
+  startFin(early?'early':'timer',el,t.topic);
+  if(!early)beep();
+  persist();
+  if(UI.tab!=='study')location.hash='nauka';else render();
+}
+function tick(){
+  const t=S.timer;if(!t)return;
+  const rem=Math.max(0,Math.ceil((t.endAt-Date.now())/1000));
+  const tt=$('#tt'),tr=$('#tr');
+  if(tt)tt.textContent=pad(Math.floor(rem/60))+':'+pad(rem%60);
+  if(tr)tr.setAttribute('stroke-dashoffset',(CIRC*(1-rem/(t.min*60))).toFixed(1));
+  if(rem<=0)timerDone(false);
+}
+setInterval(tick,500);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tick();if(S.timer)keepAwake()}});
+
+/* ---------- events ---------- */
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&UI.sheet){UI.sheet=null;UI.armed=null;render()}});
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const act=el.dataset.act,id=el.dataset.id;
+  const arm=key=>{if(UI.armed===key){UI.armed=null;return true}UI.armed=key;render();setTimeout(()=>{if(UI.armed===key){UI.armed=null;render()}},3500);return false};
+  switch(act){
+    case 'hard':{const d=dayRef(today());d.hard=!d.hard;syncBonus(today());commit();break}
+    case 'q':{
+      const k=today(),d=dayRef(k),q=findQuest(id);if(!q)break;
+      if(d.done[id]!=null)delete d.done[id];else d.done[id]=q.xp;
+      syncBonus(k);commit();break}
+    case 'sheet':UI.sheet={t:'quest',id};UI.sheetNew=true;render();break;
+    case 'sheetadd':UI.sheet={t:'addq'};UI.sheetNew=true;render();break;
+    case 'closesheet':UI.sheet=null;UI.armed=null;render();break;
+    case 'addq':{
+      const name=$('#nq-name').value.trim();if(!name){toast('Wpisz nazwę zlecenia');break}
+      S.customQuests.push({id:'c'+uid(),name,xp:+$('#nq-xp').value||30,daily:$('#nq-daily').checked,date:today()});
+      UI.sheet=null;syncBonus(today());commit();break}
+    case 'delq':if(arm('dq'+id)){S.customQuests=S.customQuests.filter(q=>q.id!==id);UI.sheet=null;syncBonus(today());commit()}break;
+    case 'pre':UI.pre=+el.dataset.n;render();break;
+    case 'start':{
+      const mi=clamp(Math.round(+UI.pre)||50,1,240);
+      unlockAudio();keepAwake();
+      S.timer={start:Date.now(),endAt:Date.now()+mi*60000,min:mi,topic:S.lastTopic};
+      persist();render();break}
+    case 'stop':timerDone(true);break;
+    case 'discard':if(arm('tdisc')){S.timer=null;releaseAwake();persist();render()}break;
+    case 'manual':startFin('manual','',S.lastTopic);render();break;
+    case 'rate':UI.fin[el.dataset.w]=+el.dataset.n;render();break;
+    case 'cancelfin':UI.fin=null;render();break;
+    case 'savefin':{
+      const f=UI.fin,m=Math.round(+f.min);
+      if(!(m>=1)){toast('Wpisz czas nauki w minutach');break}
+      const mult=0.6+0.2*((f.focus+f.und)/2-1);
+      const date=f.date&&f.date<=today()?f.date:today();
+      S.sessions.push({id:uid(),date,t:Date.now(),min:m,focus:f.focus,und:f.und,topic:f.topic.trim(),xp:Math.round(m*mult)});
+      if(f.topic.trim())S.lastTopic=f.topic.trim();
+      syncBonus(date);UI.fin=null;commit();toast('Sesja zapisana: +'+Math.round(m*mult)+' XP');break}
+    case 'dels':if(arm('ds'+id)){const s=S.sessions.find(x=>x.id===id);S.sessions=S.sessions.filter(x=>x.id!==id);if(s)syncBonus(s.date);commit()}break;
+    case 'bnew':{const b={id:'b'+uid(),created:Date.now(),status:'draft',neg:blank(),pos:blank(),reviews:{},xp:0};S.beliefs.push(b);UI.belief=b.id;persist();render();window.scrollTo(0,0);break}
+    case 'bopen':UI.belief=id;render();window.scrollTo(0,0);break;
+    case 'bback':UI.belief=null;render();window.scrollTo(0,0);break;
+    case 'ans':{
+      const b=S.beliefs.find(x=>x.id===UI.belief);if(!b)break;
+      b[el.dataset.side].a[+el.dataset.i].v=el.dataset.v;persist();render();break}
+    case 'bfinish':{
+      const b=S.beliefs.find(x=>x.id===UI.belief);if(!b||!canFinish(b))break;
+      b.status='done';b.xp=80;commit();toast('Przekonanie przekute: +80 XP');break}
+    case 'brev':{
+      const b=S.beliefs.find(x=>x.id===id);if(!b)break;
+      b.reviews=b.reviews||{};b.reviews[today()]=10;commit();break}
+    case 'bdel':if(arm('db'+id)){S.beliefs=S.beliefs.filter(x=>x.id!==id);UI.belief=null;commit()}break;
+    case 'buy':{
+      const r=S.rewards.find(x=>x.id===id);if(!r||gold()<r.cost||lvl(totalXP()).L<r.minLevel)break;
+      S.purchases.push({id:uid(),t:Date.now(),name:r.name,cost:r.cost,date:new Date().toLocaleDateString('pl-PL')});
+      commit();toast('Odebrano: '+r.name);break}
+    case 'redit':UI.sheet={t:'reward',id};UI.sheetNew=true;UI.armed=null;render();break;
+    case 'rsave':{
+      const r=S.rewards.find(x=>x.id===id);if(!r)break;
+      const n=$('#re-name').value.trim();if(!n){toast('Nagroda potrzebuje nazwy');break}
+      r.name=n;r.cost=Math.max(1,Math.round(+$('#re-cost').value)||1);r.minLevel=Math.max(1,Math.round(+$('#re-lvl').value)||1);r.ex=false;UI.sheet=null;commit();break}
+    case 'rdel':if(arm('dr'+id)){S.rewards=S.rewards.filter(x=>x.id!==id);UI.sheet=null;commit()}break;
+    case 'rtoggle':UI.sheet={t:'newr'};UI.sheetNew=true;render();break;
+    case 'radd':{
+      const n=$('#nr-name').value.trim();if(!n){toast('Wpisz nazwę nagrody');break}
+      S.rewards.push({id:'r'+uid(),name:n,cost:Math.max(1,Math.round(+$('#nr-cost').value)||1),minLevel:Math.max(1,Math.round(+$('#nr-lvl').value)||1)});
+      UI.sheet=null;commit();break}
+    case 'reset':if(arm('reset')){S=def();UI.fin=null;UI.belief=null;UI.sheet=null;UI.lastLevel=1;commit();location.hash='dzis'}break;
+  }
+});
+document.addEventListener('input',e=>{
+  const t=e.target,k=t.dataset&&t.dataset.in;if(!k)return;
+  switch(k){
+    case 'note':S.notes[t.dataset.id]=t.value;persist();break;
+    case 'sleepH':{const d=dayRef(today());d.sleepH=t.value===''?null:clamp(+t.value,0,16);persist();break}
+    case 'topic':S.lastTopic=t.value;persist();break;
+    case 'cmin':{const n=Math.round(+t.value);if(n>=1&&n<=240){UI.pre=n}break}
+    case 'fmin':UI.fin.min=t.value;{const f=UI.fin,x=$('#finxp');if(x)x.textContent='Nagroda: +'+Math.round(Math.max(1,+f.min||0)*(0.6+0.2*((f.focus+f.und)/2-1)))+' XP. Wyższa jakość nauki daje więcej XP na każdą minutę.'}break;
+    case 'ftopic':UI.fin.topic=t.value;break;
+    case 'fdate':UI.fin.date=t.value;break;
+    case 'btext':{const b=S.beliefs.find(x=>x.id===UI.belief);if(!b)break;b[t.dataset.side].text=t.value;persist();if(gateSig(b)!==UI.sig)render();break}
+    case 'bnote':{const b=S.beliefs.find(x=>x.id===UI.belief);if(!b)break;b[t.dataset.side].a[+t.dataset.i].n=t.value;persist();break}
+    case 'pname':S.profile.name=t.value;persist();break;
+    case 'pgoal':{const n=Math.round(+t.value);if(n>=10)S.profile.goal=Math.min(n,900);persist();break}
+    case 'pmin':{const n=Math.round(+t.value);if(n>=5)S.profile.min=Math.min(n,600);persist();break}
+  }
+});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.in;if(k&&k[0]==='p'&&k.length>3)render()});
+
+/* ---------- boot ---------- */
+async function boot(){
+  $('#scene').innerHTML=forestSVG();
+  try{const raw=localStorage.getItem(KEY);if(raw)S=norm(JSON.parse(raw))}catch(e){}
+  compact();
+  UI.lastLevel=lvl(totalXP()).L;
+  route();render();
+  try{
+    const c=window.claude;
+    if(c&&c.use){
+      const [dbm,user]=await Promise.all([c.use('db'),c.use('user')]);
+      const id=user?await user.id():null;
+      if(dbm&&id){
+        ref=dbm.doc('data/users/'+id+'/state');
+        const snap=await ref.get();
+        if(snap.exists){
+          const r=JSON.parse(JSON.stringify(snap.data()));
+          if((r.rev||0)>(S.rev||0)){S=norm(r);compact();UI.lastLevel=lvl(totalXP()).L;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+          else if((S.rev||0)>(r.rev||0))flush();
+        }else if(S.rev)flush();
+        UI.sync='cloud';
+      }
+    }
+  }catch(e){UI.sync='local'}
+  UI.ready=true;
+  render();
+  if(S.timer){if(Date.now()>=S.timer.endAt)timerDone(false);else keepAwake()}
+}
+boot();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+</script>
+</body>
+</html>
