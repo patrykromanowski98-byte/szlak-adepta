@@ -257,6 +257,34 @@ table.grid thead th{text-align:center;color:var(--ink2);font-size:12px;letter-sp
 .toast div{background:var(--ink);color:#0b1f17;padding:10px 18px;border-radius:12px;font-weight:700;max-width:100%;text-align:center;box-shadow:0 6px 22px rgba(0,0,0,.5)}
 .toast div.lvl{background:linear-gradient(180deg,#f3d27c,#c8913a);color:var(--gold-ink);font-family:var(--display);font-size:24px;border:1px solid #f4d48c}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.ff{opacity:.6}}
+
+/* categories + emotions */
+.hud-link{display:flex;align-items:center;gap:12px;flex:1;min-width:0;color:inherit;text-decoration:none}
+.chips.left{justify-content:flex-start}
+.cattabs{display:flex;gap:8px;overflow-x:auto;max-width:100%;min-width:0;padding:2px 2px 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cattabs::-webkit-scrollbar{display:none}
+.ct{flex:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 16px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.05);font-size:16px;white-space:nowrap}
+.ct span{font-size:13px;color:var(--ink2);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:rgba(255,255,255,.08);display:inline-grid;place-items:center}
+.ct[aria-selected="true"]{background:var(--gold);border-color:var(--gold);color:var(--gold-ink);font-weight:700}
+.ct[aria-selected="true"] span{background:rgba(38,25,3,.18);color:var(--gold-ink)}
+.ct.add{border-style:dashed;border-color:rgba(227,182,87,.5);color:var(--gold);background:transparent}
+.tag.cat{border-color:rgba(227,182,87,.5);color:var(--gold)}
+.egroups{display:flex;flex-wrap:wrap;gap:8px}
+.eg{min-height:46px;padding:4px 18px;border-radius:99px;border:2px solid var(--gc);background:rgba(255,255,255,.03);font-weight:700;font-size:17px}
+.eg[aria-checked="true"]{background:var(--gc);color:#10150f}
+.words{display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;padding:2px;overscroll-behavior:contain}
+.wchip{min-height:42px;padding:3px 14px;border-radius:99px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:16px}
+.wchip[aria-checked="true"]{background:var(--gc);border-color:var(--gc);color:#10150f;font-weight:700}
+.erow{display:grid;grid-template-columns:64px 1fr 24px;gap:10px;align-items:center}
+.erow .mbar i{display:block;height:100%;border-radius:5px}
+.emo-item{display:flex;gap:12px;align-items:flex-start;padding:12px 14px}
+.emo-dot{width:12px;height:12px;border-radius:50%;background:var(--gc);margin-top:7px;flex:none}
+.grow{flex:1;min-width:0}
+.eg-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;margin-left:4px;border-radius:10px;background:var(--gc);color:#10150f;font-size:13px}
+.eg[aria-checked="true"] .eg-n{background:#10150f;color:var(--gc)}
+.ewrap{display:flex;flex-wrap:wrap;gap:6px}
+.etag{display:inline-flex;align-items:center;gap:6px;padding:2px 12px;border-radius:99px;border:1px solid var(--gc);background:rgba(255,255,255,.04);font-weight:700;font-size:15.5px}
+button.etag.rm{min-height:38px;background:var(--gc);color:#10150f}
 </style>
 
 </head>
@@ -308,6 +336,7 @@ const lvl=xp=>{let L=1,need=120,rest=xp;while(rest>=need){rest-=need;L++;need=12
 /* ---------- state ---------- */
 function def(){return{rev:0,profile:{name:'Adept',goal:180,min:30,sleep:7},
   sessions:[],days:{},beliefs:[],customQuests:[],notes:{},lastTopic:'',
+  cats:[{id:'ca-od',name:'Odżywianie'},{id:'ca-si',name:'Siłownia'},{id:'ca-se',name:'Sen'},{id:'ca-na',name:'Wolność od nałogów'}],emotions:[],
   rewards:[
     {id:'r1',name:'Odcinek ulubionego serialu',cost:30,minLevel:1,ex:true},
     {id:'r2',name:'Ulubiony deser',cost:60,minLevel:1,ex:true},
@@ -317,7 +346,7 @@ function def(){return{rev:0,profile:{name:'Adept',goal:180,min:30,sleep:7},
 function norm(o){const d=def();const s=Object.assign(d,o||{});s.profile=Object.assign(def().profile,(o&&o.profile)||{});s.archive=Object.assign({xp:0,min:0,n:0,q:{}},(o&&o.archive)||{});if(!s.archive.q)s.archive.q={};return s}
 let S=def();
 const UI={tab:'today',belief:null,armed:null,note:null,fin:null,edit:null,addQ:false,addR:false,pre:50,sig:'',lastLevel:null,sync:'local',ready:false};
-const TABS={dzis:'today',nauka:'study',przekonania:'beliefs',skarbiec:'treasury',kronika:'chronicle'};
+const TABS={dzis:'today',nauka:'study',przekonania:'beliefs',skarbiec:'treasury',kronika:'chronicle',emocje:'emotions'};
 
 /* ---------- persistence ---------- */
 let ref=null,saveT=null,saving=false,again=false;
@@ -342,6 +371,7 @@ function compact(){
   const keep=[];
   for(const s of S.sessions){if(s.date<cut){S.archive.xp+=s.xp;S.archive.min+=s.min;S.archive.n++}else keep.push(s)}
   S.sessions=keep;
+  {const ek=[];for(const em of S.emotions){if(em.date<cut)S.archive.xp+=em.xp||0;else ek.push(em)}S.emotions=ek}
   for(const k of Object.keys(S.days)){
     if(k<cut){const d=S.days[k];for(const q in d.done){S.archive.xp+=d.done[q];S.archive.q[q]=(S.archive.q[q]||0)+1}S.archive.xp+=d.bonus||0;delete S.days[k]}
   }
@@ -355,6 +385,7 @@ function totalXP(){
   for(const s of S.sessions)x+=s.xp;
   for(const k in S.days){const d=S.days[k];for(const q in d.done)x+=d.done[q];x+=d.bonus||0}
   for(const b of S.beliefs){x+=b.xp||0;for(const r in (b.reviews||{}))x+=b.reviews[r]}
+  for(const em of S.emotions)x+=em.xp||0;
   return x;
 }
 const spent=()=>S.purchases.reduce((a,p)=>a+p.cost,0);
@@ -409,6 +440,7 @@ const IC={
   study:'<path d="M6 3h12M6 21h12M7 3v4l5 5-5 5v4M17 3v4l-5 5 5 5v4"/>',
   treasury:'<path d="M4 11h16v9H4zM4 11a8 8 0 0 1 16 0"/><path d="M12 14v3"/>',
   chronicle:'<path d="M4 20V11M10 20V4M16 20v-9M22 20H2"/>',
+  emotions:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
   gym:'<path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12"/>',
   food:'<path d="M12 7c-4-3-8 0-7 5 1 5 4 9 7 9s6-4 7-9c1-5-3-8-7-5z"/><path d="M12 7c0-2 1-3.5 3-4.5"/>',
   sleep:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
@@ -424,8 +456,8 @@ const IC={
 };
 const ic=(n,c='')=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${IC[n]}</svg>`;
 const QI={gym:'gym',food:'food',sleep:'sleep',hypno:'eye',weight:'dice',belief:'beliefs'};
-const NAV=[['today','Dziś'],['beliefs','Przekonania'],['study','Nauka'],['treasury','Skarbiec'],['chronicle','Kronika']];
-const HREF={today:'dzis',study:'nauka',beliefs:'przekonania',treasury:'skarbiec',chronicle:'kronika'};
+const NAV=[['today','Dziś'],['beliefs','Przekonania'],['study','Nauka'],['emotions','Emocje'],['treasury','Skarbiec']];
+const HREF={today:'dzis',study:'nauka',beliefs:'przekonania',treasury:'skarbiec',chronicle:'kronika',emotions:'emocje'};
 const SEAL='<svg viewBox="0 0 24 24" aria-hidden="true"><path class="d" d="M12 2l10 10-10 10L2 12z"/><path class="c" d="M7.5 12.5l3 3 6-6.5"/></svg>';
 const ORN='<svg class="orn" viewBox="0 0 220 16" aria-hidden="true"><path d="M2 8h88M130 8h88" fill="none"/><path d="M110 2l5.5 6-5.5 6-5.5-6z"/><path d="M96 8c-5-6-11-6-16 0 5 5 11 5 16 0zM124 8c5-6 11-6 16 0-5 5-11 5-16 0z"/></svg>';
 const head=(eyebrow,title)=>`<header class="ph"><p class="eyebrow">${esc(eyebrow)}</p><h2>${esc(title)}</h2>${ORN}</header>`;
@@ -466,9 +498,9 @@ function forestSVG(){
 /* ---------- HUD ---------- */
 function heroHTML(){
   const xp=totalXP(),l=lvl(xp),st=streak(),g=gold(),C=2*Math.PI*24;
-  return `<div class="hud-row">
+  return `<div class="hud-row"><a class="hud-link" href="#kronika" aria-label="Otwórz kartę łowcy">
     <div class="orb"><svg viewBox="0 0 56 56" aria-hidden="true"><circle class="t" cx="28" cy="28" r="24"/><circle class="p" cx="28" cy="28" r="24" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C*(1-l.cur/l.need)).toFixed(1)}"/></svg><b>${l.L}</b></div>
-    <div class="hud-id"><p class="hud-name">${esc(S.profile.name||'Adept')}</p><p class="hud-rank num">${rank(l.L)} · ${l.cur}/${l.need} XP</p></div>
+    <div class="hud-id"><p class="hud-name">${esc(S.profile.name||'Adept')}</p><p class="hud-rank num">${rank(l.L)} · ${l.cur}/${l.need} XP</p></div></a>
     <div class="hud-chips">
       <span class="chipx" aria-label="Płomień nauki: ${st} dni z rzędu">${ic('flame')}<span class="num">${st}</span></span>
       <span class="chipx" aria-label="Złoto: ${g}"><i class="coin" aria-hidden="true"></i><span class="num">${g}</span></span></div></div>`;
@@ -611,6 +643,7 @@ function beliefDetail(b){
   return `<div><button class="btn ghost sm" data-act="bback">← Lista przekonań</button></div>
   ${head(b.status==='done'?'Przekute przekonanie':'Kuźnia przekonań','Zmiana przekonania')}
   ${stepper(b)}
+  ${catPicker(b)}
   <section class="card step"><span class="step-h">Krok 1 · Przekonanie, które chcę zmienić</span>
     <textarea id="neg-text" data-in="btext" data-side="neg" maxlength="400" placeholder="Zapisz negatywne przekonanie własnymi słowami.">${esc(b.neg.text)}</textarea></section>
   ${negOk?`<section class="card step"><span class="step-h">Krok 2 · Pięć pytań do tego przekonania</span><div>${qaHTML(b.neg,'neg')}</div>
@@ -628,23 +661,39 @@ function beliefDetail(b){
     <div><button class="btn danger sm ${UI.armed==='db'+b.id?'armed':''}" data-act="bdel" data-id="${esc(b.id)}">${UI.armed==='db'+b.id?'Na pewno usunąć?':'Usuń przekonanie'}</button></div>
   </section>`;
 }
+UI.cat='all';
+const catName=id=>{const c=S.cats.find(x=>x.id===id);return c?c.name:'Bez kategorii'};
+const inCat=b=>UI.cat==='all'?true:UI.cat==='none'?!S.cats.some(c=>c.id===b.cat):b.cat===UI.cat;
+function catCount(id){return S.beliefs.filter(b=>id==='all'?true:id==='none'?!S.cats.some(c=>c.id===b.cat):b.cat===id).length}
+function catTabs(){
+  const items=[['all','Wszystkie'],...S.cats.map(c=>[c.id,c.name])];
+  if(catCount('none')>0)items.push(['none','Bez kategorii']);
+  return `<div class="cattabs" role="tablist" aria-label="Kategorie przekonań">${items.map(([id,n])=>`<button class="ct" role="tab" aria-selected="${UI.cat===id}" data-act="cat" data-id="${esc(id)}">${esc(n)}<span class="num">${catCount(id)}</span></button>`).join('')}<button class="ct add" data-act="catnew">+ Kategoria</button></div>`;
+}
+function catPicker(b){
+  return `<section class="sec"><span class="sec-t">Kategoria</span><div class="chips left" role="radiogroup" aria-label="Kategoria przekonania">${S.cats.map(c=>`<button class="chip" role="radio" aria-checked="${b.cat===c.id}" data-act="setcat" data-id="${esc(c.id)}">${esc(c.name)}</button>`).join('')}<button class="chip" role="radio" aria-checked="${!S.cats.some(c=>c.id===b.cat)}" data-act="setcat" data-id="">Bez kategorii</button></div></section>`;
+}
 function viewBeliefs(){
   if(UI.belief){const b=S.beliefs.find(x=>x.id===UI.belief);if(b)return beliefDetail(b);UI.belief=null}
+  if(UI.cat!=='all'&&UI.cat!=='none'&&!S.cats.some(c=>c.id===UI.cat))UI.cat='all';
   const k=today();
-  const list=[...S.beliefs].sort((a,b)=>b.created-a.created);
+  const cur=S.cats.find(c=>c.id===UI.cat);
+  const list=S.beliefs.filter(inCat).sort((a,b)=>b.created-a.created);
   return `${head('Kuźnia przekonań','Moje przekonania')}
     <p class="muted center">Najpierw sprawdzasz stare przekonanie pięcioma pytaniami. Dopiero potem odblokowuje się miejsce na nowe, które sprawdzasz tymi samymi pytaniami.</p>
-    <button class="btn big-btn" data-act="bnew">Nowe przekonanie</button>
+    ${catTabs()}
+    ${cur?`<div class="row sb"><span class="sec-t">Kategoria: ${esc(cur.name)}</span><button class="btn ghost sm" data-act="catedit" data-id="${esc(cur.id)}">Edytuj kategorię</button></div>`:''}
+    <button class="btn big-btn" data-act="bnew">${cur?'Nowe przekonanie w „'+esc(cur.name)+'”':'Nowe przekonanie'}</button>
     <section class="sec">
     ${list.length?list.map(b=>{
       const done=b.status==='done',rev=(b.reviews||{})[k]!=null;
       return `<article class="card belief">
         <span class="bl">Było</span><p class="btxt neg">${esc(b.neg.text||'(bez treści)')}</p>
         ${hasText(b.pos)?`<span class="bl">Jest</span><p class="btxt pos">${esc(b.pos.text)}</p>`:''}
-        <div class="row"><span class="tag ${done?'ok':''}">${esc(beliefStep(b))}</span>${ansN(b.neg)===5&&ansN(b.pos)===5?`<span class="tag num">Tak: ${yesN(b.neg)}/5 → ${yesN(b.pos)}/5</span>`:''}</div>
+        <div class="row">${UI.cat==='all'?`<span class="tag cat">${esc(catName(b.cat))}</span>`:''}<span class="tag ${done?'ok':''}">${esc(beliefStep(b))}</span>${ansN(b.neg)===5&&ansN(b.pos)===5?`<span class="tag num">Tak: ${yesN(b.neg)}/5 → ${yesN(b.pos)}/5</span>`:''}</div>
         <div class="row"><button class="btn ghost sm" data-act="bopen" data-id="${esc(b.id)}">${done?'Otwórz':'Kontynuuj'}</button>
         ${done?`<button class="btn sm" data-act="brev" data-id="${esc(b.id)}" ${rev?'disabled':''}>${rev?'Powtórzone dziś':'Powtórzyłem dziś (+10 XP)'}</button>`:''}</div></article>`}).join('')
-    :`<div class="card"><p>Zacznij od jednego przekonania, które Ci przeszkadza. Aplikacja poprowadzi Cię przez pięć pytań i odblokuje nowe przekonanie dopiero po ostatniej odpowiedzi.</p></div>`}
+    :`<div class="card"><p>${cur?'W kategorii „'+esc(cur.name)+'” nie ma jeszcze przekonań. Dodaj pierwsze przyciskiem powyżej.':UI.cat==='none'?'Wszystkie przekonania mają już kategorię.':'Zacznij od jednego przekonania, które Ci przeszkadza. Aplikacja poprowadzi Cię przez pięć pytań i odblokuje nowe przekonanie dopiero po ostatniej odpowiedzi.'}</p></div>`}
     </section>
     <section class="sec"><span class="sec-t">Pięć pytań</span><ol class="small muted qlist">${Q5.map((q,i)=>`<li>${i+1}. ${esc(q)}</li>`).join('')}</ol></section>`;
 }
@@ -686,7 +735,8 @@ function viewTreasury(){
         <button class="btn ghost sm" data-act="redit" data-id="${esc(r.id)}">Edytuj</button></div></div>`}).join('')||'<p class="muted">Brak nagród. Dodaj pierwszą.</p>'}</div></section>
     ${last.length?`<section class="sec"><span class="sec-t">Ostatnio odebrane</span><div class="list">${last.map(p=>`<div class="sess"><span>${esc(p.name)}</span><span class="small muted num">${esc(p.date)} · −${p.cost}</span></div>`).join('')}</div></section>`:''}
     <section class="sec"><div class="sec-h"><span class="sec-t">Trofea</span><span class="small muted num">${ach.filter(a=>a.on).length} / ${ach.length}</span></div>
-    <div class="troph">${ach.map(a=>`<div class="tr ${a.on?'on':''}"><span class="hexb">${ic('star')}</span><b>${esc(a.name)}</b><span class="small muted">${a.on?'zdobyte':esc(a.desc)}${a.on?'':' · '+a.prog}</span></div>`).join('')}</div></section>`;
+    <div class="troph">${ach.map(a=>`<div class="tr ${a.on?'on':''}"><span class="hexb">${ic('star')}</span><b>${esc(a.name)}</b><span class="small muted">${a.on?'zdobyte':esc(a.desc)}${a.on?'':' · '+a.prog}</span></div>`).join('')}</div></section>
+    <div class="center"><a class="btn ghost" href="#kronika">Karta łowcy i ustawienia</a></div>`;
 }
 
 /* ---------- Chronicle ---------- */
@@ -755,7 +805,59 @@ function viewChronicle(){
       <p class="small muted">${esc(syncTxt)}</p>
       <div><button class="btn danger sm ${UI.armed==='reset'?'armed':''}" data-act="reset">${UI.armed==='reset'?'Na pewno skasować wszystko?':'Zacznij od nowa'}</button></div></div></section>`;
 }
-const VIEWS={today:viewToday,study:viewStudy,beliefs:viewBeliefs,treasury:viewTreasury,chronicle:viewChronicle};
+/* ---------- Emotions ---------- */
+UI.emo={g:null,ws:[],note:'',q:''};
+const EMO=[
+  {id:'smutek',name:'Smutek',c:'#6fb6d8',w:['Apatia','Bezradność','Gorycz','Litość','Melancholia','Niezadowolenie','Nieszczęście','Odrzucenie','Osamotnienie','Poczucie krzywdy','Przybicie','Przygaszenie','Przygnębienie','Przykrość','Pustka','Rozczarowanie','Rozdarcie','Rozpacz','Smutek','Strata','Tęsknota','Troska','Współczucie','Załamanie','Zawód','Zatroskanie','Zmartwienie','Zranienie','Żal','Żałoba']},
+  {id:'strach',name:'Strach',c:'#a98bd6',w:['Bezbronność','Lęk','Napięcie','Niepewność','Niepokój','Nieśmiałość','Nieufność','Obawa','Obojętność','Odraza','Ostrożność','Panika','Podejrzliwość','Poruszenie','Powściągliwość','Przerażenie','Płochliwość','Strach','Szok','Trema','Trwoga','Wahanie','Wstrząs','Zagubienie','Zawiść','Zazdrość']},
+  {id:'radosc',name:'Radość',c:'#e3b657',w:['Akceptacja','Bezpieczeństwo','Beztroska','Bliskość','Błogość','Czułość','Docenienie','Duma','Entuzjazm','Euforia','Fascynacja','Harmonia','Komfort','Lekkość','Miłość','Nadzieja','Namiętność','Natchnienie','Odprężenie','Optymizm','Ożywienie','Pewność','Podekscytowanie','Pogoda ducha','Pokrzepienie','Przyjemność','Radość','Rozbawienie','Rozkosz','Równowaga','Rozrzewnienie','Satysfakcja','Serdeczność','Spełnienie','Spokój','Swoboda','Sympatia','Szacunek','Tkliwość','Ufność','Ulga','Ukojenie','Uniesienie','Uwielbienie','Wdzięczność','Wesołość','Wolność','Wyciszenie','Wzruszenie','Zachwyt','Zaciekawienie','Zadowolenie','Zaintrygowanie','Zakochanie','Zaufanie','Życzliwość']},
+  {id:'wstyd',name:'Wstyd',c:'#d977b0',w:['Alienacja','Kompromitacja','Niedopasowanie','Niesmak','Niewygoda','Obcość','Poczucie niższości','Poczucie winy','Pomieszanie','Skrępowanie','Skonsternowanie','Speszenie','Upokorzenie','Wstyd','Wyrzuty sumienia','Wyśmianie','Zdegustowanie','Zgorszenie','Zlekceważenie','Zakłopotanie','Zmieszanie']},
+  {id:'zlosc',name:'Złość',c:'#e8836e',w:['Agresja','Animozja','Bunt','Chęć zemsty','Desperacja','Frustracja','Furia','Gniew','Irytacja','Lekceważenie','Niechęć','Nienawiść','Niezaspokojenie','Obraza','Oburzenie','Podminowanie','Pogarda','Rozżalenie','Sarkazm','Szał','Uraza','Wrogość','Wstręt','Wściekłość','Wzburzenie','Wytrącenie z równowagi','Zacietrzewienie','Złość','Zniewaga']}
+];
+const EG=id=>EMO.find(g=>g.id===id);
+function fmtDay(k){
+  if(k===today())return'Dziś';
+  if(k===dkey(dayShift(-1)))return'Wczoraj';
+  const p=k.split('-');
+  return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'});
+}
+const entryItems=x=>x.items&&x.items.length?x.items:[{g:x.g,w:x.w}];
+const hasSel=(g,w)=>UI.emo.ws.some(x=>x.g===g&&x.w===w);
+function viewEmotions(){
+  const em=UI.emo,g=em.g?EG(em.g):null,q=em.q.trim().toLowerCase();
+  const words=g?g.w.filter(w=>!q||w.toLowerCase().includes(q)):[];
+  const todayN=S.emotions.filter(x=>x.date===today()).length;
+  const hist=[...S.emotions].sort((a,b)=>b.t-a.t).slice(0,40);
+  const days=[],by={};
+  for(const x of hist){if(!by[x.date]){by[x.date]=[];days.push(x.date)}by[x.date].push(x)}
+  const wk=S.emotions.filter(x=>x.date>=dkey(dayShift(-6)));
+  const cnt=id=>wk.reduce((a,x)=>a+entryItems(x).filter(it=>it.g===id).length,0);
+  const mx=Math.max(1,...EMO.map(gr=>cnt(gr.id)));
+  const selN=em.ws.length;
+  return `${head('Dziennik emocji','Emocje')}
+  <p class="muted center">Wybierz grupę i zaznacz jedną lub kilka emocji, także z różnych grup. Dopisz kilka słów. Nazwanie uczuć pomaga je zrozumieć.</p>
+  <section class="card gilt sec" aria-label="Nowy wpis">
+    <span class="step-h">1 · Grupa emocji</span>
+    <div class="egroups" role="radiogroup" aria-label="Grupa emocji">${EMO.map(gr=>{const n=em.ws.filter(x=>x.g===gr.id).length;return `<button class="eg" style="--gc:${gr.c}" role="radio" aria-checked="${em.g===gr.id}" data-act="eg" data-id="${gr.id}">${gr.name}${n?` <span class="num eg-n">${n}</span>`:''}</button>`}).join('')}</div>
+    ${g?`<span class="step-h">2 · Jakie to emocje?</span>
+      <input id="e-q" data-in="eq" type="text" value="${esc(em.q)}" placeholder="Szukaj w grupie: ${esc(g.name)}" aria-label="Szukaj emocji">
+      <div class="words" role="group" aria-label="Emocje z grupy ${esc(g.name)}">${words.map(w=>`<button class="wchip" style="--gc:${g.c}" role="checkbox" aria-checked="${hasSel(g.id,w)}" data-act="ew" data-w="${esc(w)}">${esc(w)}</button>`).join('')||'<p class="small muted">Brak wyników.</p>'}</div>`
+      :`<p class="small muted">Najpierw wybierz grupę.</p>`}
+    ${selN?`<span class="step-h">Wybrane emocje (${selN})</span>
+      <div class="ewrap">${em.ws.map(it=>{const gr=EG(it.g);return `<button class="etag rm" style="--gc:${gr.c}" data-act="erm" data-g="${gr.id}" data-w="${esc(it.w)}" aria-label="Usuń z wyboru: ${esc(it.w)}">${esc(it.w)} <span aria-hidden="true">×</span></button>`}).join('')}</div>
+      <span class="step-h">3 · Krótki opis</span>
+      <textarea id="e-note" data-in="enote" maxlength="300" placeholder="Co się wydarzyło? Gdzie czujesz to w ciele? Co to wywołało?">${esc(em.note)}</textarea>
+      <button class="btn big-btn" data-act="esave">Zapisz ${selN>1?'emocje':'emocję'}${todayN<3?' (+10 XP)':''}</button>
+      ${todayN>=3?'<p class="small muted">XP dostajesz za pierwsze 3 wpisy dziennie. Kolejne też się zapisują.</p>':''}`:''}
+  </section>
+  ${wk.length?`<section class="sec"><span class="sec-t">Ostatnie 7 dni</span><div class="card sec">${EMO.map(gr=>`<div class="erow"><span class="small" style="color:${gr.c}">${gr.name}</span><div class="mbar" role="img" aria-label="${gr.name}: ${cnt(gr.id)}"><i style="width:${(cnt(gr.id)/mx*100).toFixed(0)}%;background:${gr.c}"></i></div><b class="num small">${cnt(gr.id)}</b></div>`).join('')}</div></section>`:''}
+  <section class="sec"><span class="sec-t">Historia</span>
+    ${days.length?days.map(d=>`<div class="sec"><p class="small muted">${esc(fmtDay(d))}</p>${by[d].map(x=>{const its=entryItems(x);return `<div class="card emo-item"><div class="grow"><div class="ewrap">${its.map(it=>{const gr=EG(it.g)||EMO[0];return `<span class="etag" style="--gc:${gr.c}">${esc(it.w)}</span>`}).join('')}</div><p class="small muted">${new Date(x.t).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</p>${x.note?`<p class="small btxt">${esc(x.note)}</p>`:''}</div><button class="btn danger sm ${UI.armed==='de'+x.id?'armed':''}" data-act="edel" data-id="${esc(x.id)}">${UI.armed==='de'+x.id?'Na pewno?':'Usuń'}</button></div>`}).join('')}</div>`).join('')
+    :`<div class="card"><p class="muted">Jeszcze bez wpisów. Pierwszy zapisz powyżej.</p></div>`}
+  </section>`;
+}
+
+const VIEWS={today:viewToday,study:viewStudy,beliefs:viewBeliefs,emotions:viewEmotions,treasury:viewTreasury,chronicle:viewChronicle};
 
 /* ---------- bottom sheet ---------- */
 function sheetHTML(){
@@ -790,6 +892,17 @@ function sheetHTML(){
       <div class="two"><label class="f">Koszt (złoto)<input id="nr-cost" type="number" inputmode="numeric" min="1" value="80"></label>
       <label class="f">Od poziomu<input id="nr-lvl" type="number" inputmode="numeric" min="1" value="1"></label></div>
       <div class="row"><button class="btn" data-act="radd">Dodaj nagrodę</button><button class="btn ghost" data-act="closesheet">Anuluj</button></div>`;
+  }else if(s.t==='newcat'){
+    title='Nowa kategoria';
+    body=`<label class="f">Nazwa kategorii<input id="nc-name" type="text" maxlength="40" placeholder="np. Relacje"></label>
+      <div class="row"><button class="btn" data-act="catadd">Dodaj kategorię</button><button class="btn ghost" data-act="closesheet">Anuluj</button></div>`;
+  }else if(s.t==='editcat'){
+    const c=S.cats.find(x=>x.id===s.id);if(!c){UI.sheet=null;return''}
+    title='Edytuj kategorię';
+    body=`<label class="f">Nazwa kategorii<input id="ec-name" type="text" maxlength="40" value="${esc(c.name)}"></label>
+      <p class="small muted">Po usunięciu kategorii jej przekonania zostają i trafiają do „Bez kategorii”.</p>
+      <div class="row"><button class="btn" data-act="catsave" data-id="${esc(c.id)}">Zapisz</button><button class="btn ghost" data-act="closesheet">Anuluj</button>
+      <button class="btn danger ${UI.armed==='dc'+c.id?'armed':''}" data-act="catdel" data-id="${esc(c.id)}">${UI.armed==='dc'+c.id?'Na pewno usunąć?':'Usuń kategorię'}</button></div>`;
   }else{UI.sheet=null;return''}
   return `<div class="backdrop" data-act="closesheet"></div>
     <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}" tabindex="-1"><div class="wrap"><div class="grab"></div>
@@ -805,6 +918,7 @@ function render(){
   $('#view').innerHTML=VIEWS[UI.tab]();
   $('#tabs').innerHTML=NAV.map(([t,l])=>`<a class="${t==='study'?'fab':''}" href="#${HREF[t]}" ${t===UI.tab?'aria-current="page"':''}>${t==='study'?`<span class="orbtn">${ic(t)}</span>`:ic(t)}<span>${l}</span></a>`).join('');
   $('#sheet').innerHTML=sheetHTML();
+  if(UI.centerCat){UI.centerCat=false;const sel=document.querySelector('.ct[aria-selected="true"]');if(sel){const c=sel.parentElement;c.scrollLeft+=sel.getBoundingClientRect().left-c.getBoundingClientRect().left-(c.clientWidth-sel.offsetWidth)/2}}
   document.documentElement.classList.toggle('noscroll',!!UI.sheet);
   if(UI.sheet&&UI.sheetNew){UI.sheetNew=false;const p=$('#sheet .sheet');if(p)p.focus({preventScroll:true})}
   else if(fid){const n=document.getElementById(fid);if(n){try{n.focus({preventScroll:true});if(ss!=null)n.setSelectionRange(ss,se)}catch(e){}}}
@@ -901,7 +1015,7 @@ document.addEventListener('click',e=>{
       if(f.topic.trim())S.lastTopic=f.topic.trim();
       syncBonus(date);UI.fin=null;commit();toast('Sesja zapisana: +'+Math.round(m*mult)+' XP');break}
     case 'dels':if(arm('ds'+id)){const s=S.sessions.find(x=>x.id===id);S.sessions=S.sessions.filter(x=>x.id!==id);if(s)syncBonus(s.date);commit()}break;
-    case 'bnew':{const b={id:'b'+uid(),created:Date.now(),status:'draft',neg:blank(),pos:blank(),reviews:{},xp:0};S.beliefs.push(b);UI.belief=b.id;persist();render();window.scrollTo(0,0);break}
+    case 'bnew':{const b={id:'b'+uid(),created:Date.now(),status:'draft',cat:(UI.cat!=='all'&&UI.cat!=='none'?UI.cat:null),neg:blank(),pos:blank(),reviews:{},xp:0};S.beliefs.push(b);UI.belief=b.id;persist();render();window.scrollTo(0,0);break}
     case 'bopen':UI.belief=id;render();window.scrollTo(0,0);break;
     case 'bback':UI.belief=null;render();window.scrollTo(0,0);break;
     case 'ans':{
@@ -929,6 +1043,38 @@ document.addEventListener('click',e=>{
       const n=$('#nr-name').value.trim();if(!n){toast('Wpisz nazwę nagrody');break}
       S.rewards.push({id:'r'+uid(),name:n,cost:Math.max(1,Math.round(+$('#nr-cost').value)||1),minLevel:Math.max(1,Math.round(+$('#nr-lvl').value)||1)});
       UI.sheet=null;commit();break}
+    case 'cat':UI.cat=id;UI.centerCat=true;render();break;
+    case 'catnew':UI.sheet={t:'newcat'};UI.sheetNew=true;render();break;
+    case 'catedit':UI.sheet={t:'editcat',id};UI.sheetNew=true;UI.armed=null;render();break;
+    case 'catadd':{
+      const n=$('#nc-name').value.trim();if(!n){toast('Wpisz nazwę kategorii');break}
+      const c={id:'ca'+uid(),name:n.slice(0,40)};S.cats.push(c);UI.cat=c.id;UI.centerCat=true;UI.sheet=null;commit();toast('Dodano kategorię: '+c.name);break}
+    case 'catsave':{
+      const c=S.cats.find(x=>x.id===id);if(!c)break;
+      const n=$('#ec-name').value.trim();if(!n){toast('Kategoria potrzebuje nazwy');break}
+      c.name=n.slice(0,40);UI.sheet=null;commit();break}
+    case 'catdel':if(arm('dc'+id)){
+      S.cats=S.cats.filter(x=>x.id!==id);
+      S.beliefs.forEach(b=>{if(b.cat===id)b.cat=null});
+      UI.cat='all';UI.sheet=null;commit();toast('Kategoria usunięta, przekonania zostały')}break;
+    case 'setcat':{const b=S.beliefs.find(x=>x.id===UI.belief);if(!b)break;b.cat=id||null;persist();render();break}
+    case 'eg':UI.emo.g=id;UI.emo.q='';render();break;
+    case 'ew':{
+      const w=el.dataset.w,g=UI.emo.g;if(!g)break;
+      const i=UI.emo.ws.findIndex(x=>x.g===g&&x.w===w);
+      if(i>=0)UI.emo.ws.splice(i,1);else UI.emo.ws.push({g,w});
+      render();break}
+    case 'erm':{
+      const i=UI.emo.ws.findIndex(x=>x.g===el.dataset.g&&x.w===el.dataset.w);
+      if(i>=0)UI.emo.ws.splice(i,1);render();break}
+    case 'esave':{
+      const em=UI.emo;if(!em.ws.length){toast('Wybierz co najmniej jedną emocję');break}
+      const n=S.emotions.filter(x=>x.date===today()).length;
+      const items=em.ws.map(x=>({g:x.g,w:x.w}));
+      S.emotions.push({id:uid(),date:today(),t:Date.now(),g:items[0].g,w:items[0].w,items,note:em.note.trim(),xp:n<3?10:0});
+      UI.emo.ws=[];UI.emo.note='';UI.emo.q='';
+      commit();toast((items.length>1?'Emocje zapisane':'Emocja zapisana')+(n<3?': +10 XP':''));break}
+    case 'edel':if(arm('de'+id)){S.emotions=S.emotions.filter(x=>x.id!==id);commit()}break;
     case 'reset':if(arm('reset')){S=def();UI.fin=null;UI.belief=null;UI.sheet=null;UI.lastLevel=1;commit();location.hash='dzis'}break;
   }
 });
@@ -944,6 +1090,8 @@ document.addEventListener('input',e=>{
     case 'fdate':UI.fin.date=t.value;break;
     case 'btext':{const b=S.beliefs.find(x=>x.id===UI.belief);if(!b)break;b[t.dataset.side].text=t.value;persist();if(gateSig(b)!==UI.sig)render();break}
     case 'bnote':{const b=S.beliefs.find(x=>x.id===UI.belief);if(!b)break;b[t.dataset.side].a[+t.dataset.i].n=t.value;persist();break}
+    case 'eq':UI.emo.q=t.value;render();break;
+    case 'enote':UI.emo.note=t.value;break;
     case 'pname':S.profile.name=t.value;persist();break;
     case 'pgoal':{const n=Math.round(+t.value);if(n>=10)S.profile.goal=Math.min(n,900);persist();break}
     case 'pmin':{const n=Math.round(+t.value);if(n>=5)S.profile.min=Math.min(n,600);persist();break}
